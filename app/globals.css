@@ -1,0 +1,41 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --display: "Space Grotesk", ui-sans-serif, system-ui;
+}
+
+html, body { background: #070707; color: white; }
+
+* { -webkit-font-smoothing: antialiased; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(245,180,0,0.3); background-clip: content-box; }
+
+::selection { background: rgba(245,180,0,0.35); color: white; }
+
+textarea, input, button { font-family: inherit; }
+
+.tcursor::after {
+  content: "▊"; margin-left: 2px;
+  animation: blink 1s steps(1) infinite;
+  color: #f5b400;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Smooth shimmer for placeholder content */
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* hide scrollbar on certain elements when needed */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+.env.local
+.env*.local
+.DS_Store
+*.log
+.vercel
+.env
+.pre-*-backup
+.pre-hermes-backup
+.pre-voice-backup
+.pre-vault-backup
+.pre-bootstrap-backup
