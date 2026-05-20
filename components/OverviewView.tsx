@@ -11,6 +11,8 @@ import Constellation from "./Constellation";
 import SectionHeader from "./SectionHeader";
 import Waveform from "./Waveform";
 import AgentAvatar from "./AgentAvatar";
+import HermesControlCenter from "./HermesControlCenter";
+import HermesActivity from "./HermesActivity";
 
 export default function OverviewView({
   onProfileAgent, onChatAgent, onGo,
@@ -114,6 +116,12 @@ export default function OverviewView({
             onChat={onChatAgent}
           />
         ))}
+      </div>
+
+      {/* HERMES CONTROL CENTER + ACTIVITY */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+        <HermesControlCenter />
+        <HermesActivity />
       </div>
 
       {/* CHAT SHORTCUT + LIVE FEED */}

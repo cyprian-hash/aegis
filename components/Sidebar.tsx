@@ -2,17 +2,18 @@
 import { motion } from "framer-motion";
 import {
   Gauge, Bot, MessageSquare, Activity, Network, Database,
-  ScrollText, Compass, Plug,
+  ScrollText, Compass, Plug, Briefcase,
 } from "lucide-react";
 
 export type ViewId =
-  | "overview" | "agents" | "chat" | "telemetry" | "network" | "memory"
+  | "overview" | "agents" | "chat" | "projects" | "telemetry" | "network" | "memory"
   | "logs" | "missions" | "mcp";
 
 export const NAV: { id: ViewId; label: string; icon: any; group?: string }[] = [
   { id: "overview",  label: "Overview",   icon: Gauge },
   { id: "agents",    label: "Agents",     icon: Bot },
   { id: "chat",      label: "Chat",       icon: MessageSquare },
+  { id: "projects", label: "Projects",  icon: Briefcase, group: "WORKSPACE" },
   { id: "missions",  label: "Missions",   icon: Compass,   group: "OPERATIONS" },
   { id: "logs",      label: "Logs",       icon: ScrollText },
   { id: "mcp",       label: "MCP",        icon: Plug },

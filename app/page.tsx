@@ -14,25 +14,26 @@ import MemoryView from "@/components/MemoryView";
 import LogsView from "@/components/LogsView";
 import MissionsView from "@/components/MissionsView";
 import MCPView from "@/components/MCPView";
+import ProjectsView from "@/components/ProjectsView";
 import { Agent } from "@/lib/agents";
+import { useProjects } from "@/lib/useProjects";
 
 export default function Page() {
   const [active, setActive] = useState<ViewId>("overview");
   const [profileAgent, setProfileAgent] = useState<Agent | null>(null);
   const [chatAgentId, setChatAgentId] = useState<string | null>(null);
 
+  const { projects, activeId, setActiveId, loading, refresh } = useProjects();
+
   const handleProfile = (a: Agent) => {
     setProfileAgent(a);
-    // also scroll up
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
   const handleChat = (a: Agent) => {
     setChatAgentId(a.id);
     setProfileAgent(null);
     setActive("chat");
   };
-
   const switchView = (v: ViewId) => {
     setProfileAgent(null);
     setActive(v);
@@ -44,7 +45,12 @@ export default function Page() {
       <div className="relative z-10 flex min-h-screen">
         <Sidebar active={active} setActive={switchView} />
         <div className="flex-1 flex flex-col min-w-0">
-          <StatusBar />
+          <StatusBar
+            projects={projects}
+            activeId={activeId}
+            onChangeProject={setActiveId}
+            onOpenProjects={() => switchView("projects")}
+          />
           <main className="flex-1 px-6 md:px-10 py-8 max-w-[1600px] w-full mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
@@ -72,6 +78,13 @@ export default function Page() {
                                                   onSelectChat={handleChat}
                                                 />}
                     {active === "chat"      && <MessengerView initialAgentId={chatAgentId || undefined} />}
+                    {active === "projects"  && <ProjectsView
+                                                  projects={projects}
+                                                  activeId={activeId}
+                                                  onActivate={setActiveId}
+                                                  onRefresh={refresh}
+                                                  loading={loading}
+                                                />}
                     {active === "missions"  && <MissionsView />}
                     {active === "logs"      && <LogsView />}
                     {active === "mcp"       && <MCPView />}

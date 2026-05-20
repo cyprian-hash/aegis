@@ -72,6 +72,34 @@ export default function AgentAvatar({ agentId, size = 56, animated = true }: Ava
 }
 
 const SIGILS: Record<string, { color: AgentColor; glyph: (hex: string, id: string, animated: boolean) => JSX.Element }> = {
+
+  // GEMINI: twin orbits + vision aperture
+  "gemini-08": {
+    color: "gblue",
+    glyph: (hex, id, animated) => (
+      <g stroke={hex} strokeWidth="1.4" fill="none" strokeLinecap="round">
+        {/* twin interlocking orbits */}
+        <circle cx="42" cy="50" r="20" strokeOpacity="0.5" />
+        <circle cx="58" cy="50" r="20" strokeOpacity="0.5" />
+        {/* aperture / iris */}
+        <circle cx="50" cy="50" r="10" fill={hex} fillOpacity="0.12" />
+        {animated ? (
+          <motion.circle cx="50" cy="50" r="4.5" fill={hex} stroke="none"
+            animate={{ scale: [1, 1.25, 1], opacity: [1, 0.6, 1] }}
+            transition={{ duration: 2.4, repeat: Infinity }}
+            style={{ transformOrigin: "50px 50px" }} />
+        ) : (
+          <circle cx="50" cy="50" r="4.5" fill={hex} stroke="none" />
+        )}
+        {/* cardinal sight ticks */}
+        <line x1="50" y1="22" x2="50" y2="28" strokeOpacity="0.45" />
+        <line x1="50" y1="72" x2="50" y2="78" strokeOpacity="0.45" />
+        <line x1="18" y1="50" x2="24" y2="50" strokeOpacity="0.45" />
+        <line x1="76" y1="50" x2="82" y2="50" strokeOpacity="0.45" />
+      </g>
+    ),
+  },
+
   // PRIME: neural web — central node + connected satellites
   "claude-prime": {
     color: "amber",

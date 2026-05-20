@@ -1,4 +1,4 @@
-import { Brain, Search, Code2, Database, Workflow, Shield, Feather } from "lucide-react";
+import { Brain, Search, Code2, Database, Workflow, Shield, Feather, Eye} from "lucide-react";
 
 export type AgentId = "claude-prime" | "scout-01" | "forge-02" | "archive-03" | "weaver-04" | "sentry-05" | "hermes-07";
 
@@ -228,6 +228,30 @@ export const AGENTS: Agent[] = [
     ],
     greeting: "HERMES-07 online. Hand me a task — I'll handle the tools.",
     joinedAt: "Today",
+  },
+  {
+    id: "gemini-08",
+    name: "GEMINI-08",
+    shortName: "Gemini",
+    role: "Vision Core",
+    tagline: "I see what others read. Images, PDFs, video, a million tokens of context — I find what matters.",
+    model: "gemini-3.1-pro-preview",
+    status: "online", load: 14, color: "gblue", icon: Eye,
+    tokens: 0, latency: 0, tasks: 0,
+    systemPrompt: "You are GEMINI-08, the multimodal vision specialist of the AEGIS fleet, powered by Google Gemini. You excel at analyzing images, PDFs, video, audio, and very large context. When given visual or document input, describe precisely what you observe and extract what matters. You are perceptive, concise, and grounded — you report what is actually there, not what might be there.",
+    capabilities: [
+      { name: "Image Analysis", level: 97 },
+      { name: "Document Vision", level: 96 },
+      { name: "Long Context", level: 98 },
+      { name: "Multimodal Reasoning", level: 94 },
+      { name: "Chart / Diagram Reading", level: 90 },
+    ],
+    specialties: ["Image understanding", "PDF + document extraction", "1M-token context", "Video / audio analysis", "Visual QA"],
+    history: [
+      { ts: "now", title: "GEMINI-08 vision core initialized", result: "success" },
+    ],
+    greeting: "Vision core online. Show me anything — images, documents, video — and I'll tell you what's there.",
+    joinedAt: "Week 9",
   },
 ];
 

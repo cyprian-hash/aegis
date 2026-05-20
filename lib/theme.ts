@@ -1,4 +1,5 @@
 export const COLOR_MAP: Record<string, { hex: string; glow: string; soft: string }> = {
+  gblue:   { hex: "#4285F4", glow: "rgba(66,133,244,0.55)",  soft: "rgba(66,133,244,0.08)" },
   amber:   { hex: "#f5b400", glow: "rgba(245,180,0,0.55)",  soft: "rgba(245,180,0,0.12)" },
   cyan:    { hex: "#22d3ee", glow: "rgba(34,211,238,0.55)", soft: "rgba(34,211,238,0.12)" },
   violet:  { hex: "#a78bfa", glow: "rgba(167,139,250,0.55)",soft: "rgba(167,139,250,0.12)" },

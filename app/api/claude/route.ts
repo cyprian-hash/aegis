@@ -38,6 +38,102 @@ export async function POST(req: Request) {
     );
   }
 
+  // ---- Gemini branch -------------------------------------------------------
+  const effectiveModel = body.model || agent.model;
+  if (effectiveModel.startsWith("gemini")) {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (!geminiKey) {
+      return new Response(
+        JSON.stringify({ error: "GEMINI_API_KEY not set in .env.local" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const model = process.env.GEMINI_MODEL || effectiveModel;
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (event: string, data: any) => {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        };
+        try {
+          send("meta", { agent: agent.id, name: agent.name, model });
+
+          // Build Gemini "contents" from the message history.
+          const contents = body.messages.map(m => ({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }],
+          }));
+
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": geminiKey,
+            },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: agent.systemPrompt }] },
+              contents,
+              generationConfig: { maxOutputTokens: 2048 },
+            }),
+          });
+
+          if (!res.ok || !res.body) {
+            const errText = await res.text().catch(() => "");
+            send("error", { message: `Gemini API ${res.status}: ${errText.slice(0, 300)}` });
+            controller.close();
+            return;
+          }
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = "";
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split("\n");
+            buf = lines.pop() || "";
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data:")) continue;
+              const payload = trimmed.slice(5).trim();
+              if (!payload || payload === "[DONE]") continue;
+              try {
+                const json = JSON.parse(payload);
+                const parts = json?.candidates?.[0]?.content?.parts;
+                if (Array.isArray(parts)) {
+                  for (const part of parts) {
+                    if (part?.text) send("delta", { text: part.text });
+                  }
+                }
+              } catch { /* skip non-JSON keepalive lines */ }
+            }
+          }
+          send("done", { ok: true });
+        } catch (err: any) {
+          send("error", { message: err?.message || "Gemini stream failed" });
+        } finally {
+          controller.close();
+        }
+      },
+    });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive",
+      },
+    });
+  }
+  // ---- end Gemini branch ---------------------------------------------------
+
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ error: "ANTHROPIC_API_KEY not set in .env.local" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
   const client = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
   const stream = new ReadableStream({

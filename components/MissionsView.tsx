@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, ChevronRight, ChevronUp, Clock, CheckCircle2, Circle, Workflow, Sparkles } from "lucide-react";
+import { Plus, X, ChevronRight, ChevronUp, Clock, CheckCircle2, Circle, Workflow, Sparkles, Send } from "lucide-react";
 import { COLOR_MAP, pad } from "@/lib/theme";
 import { AGENTS, Agent } from "@/lib/agents";
 import SectionHeader from "./SectionHeader";
@@ -222,6 +222,28 @@ export default function MissionsView() {
   );
 }
 
+
+async function sendMissionToHermes(m: Mission): Promise<{ ok: boolean; task_id?: string; error?: string }> {
+  const assignee = AGENTS.find(a => m.agentIds.includes(a.id))?.shortName?.toLowerCase() || undefined;
+  const stepLines = m.steps.map(s => `- [${s.done ? "x" : " "}] ${s.label}`).join("\n");
+  const body = [m.brief, "", "## Steps", stepLines].join("\n");
+  try {
+    const res = await fetch("/api/hermes/dispatch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: `[${m.id}] ${m.title}`,
+        body,
+        priority: m.priority === "P0" ? 0 : m.priority === "P1" ? 1 : m.priority === "P2" ? 2 : 3,
+      }),
+    });
+    const data = await res.json();
+    return { ok: data.ok, task_id: data.task_id, error: data.error };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || "dispatch failed" };
+  }
+}
+
 function MissionCard({ m, delay, onClick }: { m: Mission; delay: number; onClick: () => void }) {
   const pc = COLOR_MAP[PRIORITY_COLOR[m.priority]];
   return (
@@ -331,13 +353,27 @@ function MissionDetail({ m, onClose, onAdvance }: { m: Mission; onClose: () => v
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-2 border-t border-white/[0.06]">
+          <div className="flex items-center gap-2 pt-2 border-t border-white/[0.06] flex-wrap">
             <button
               onClick={onAdvance}
               disabled={m.status === "complete"}
               className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full bg-amber-400 text-black hover:bg-amber-300 disabled:opacity-40 disabled:cursor-not-allowed font-mono text-[11px] tracking-[0.18em] font-medium"
             >
               <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.5} /> ADVANCE STATUS
+            </button>
+            <button
+              onClick={async () => {
+                const r = await sendMissionToHermes(m);
+                if (r.ok) {
+                  alert(`Sent to Hermes${r.task_id ? ` as ${r.task_id}` : ""}.`);
+                } else {
+                  alert(`Hermes dispatch failed: ${r.error || "unknown error"}`);
+                }
+              }}
+              className="px-4 py-2.5 rounded-full border border-amber-400/30 hover:border-amber-400/60 hover:bg-amber-400/10 font-mono text-[11px] tracking-[0.18em] text-amber-300"
+              title="Create a Hermes kanban task from this mission"
+            >
+              <Send className="h-3.5 w-3.5 inline mr-1" strokeWidth={2} /> SEND TO HERMES
             </button>
             <button className="px-4 py-2.5 rounded-full border border-white/10 hover:border-white/30 hover:bg-white/5 font-mono text-[11px] tracking-[0.18em] text-white/70">
               <ChevronUp className="h-3.5 w-3.5 inline mr-1" strokeWidth={2} /> ESCALATE
