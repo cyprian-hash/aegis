@@ -106,10 +106,12 @@ export default function ChatView({
     abortRef.current = ctrl;
 
     try {
+      let activeProjectId: string | null = null;
+      try { activeProjectId = localStorage.getItem("aegis_active_project"); } catch {}
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId: agent.id, messages: apiMessages }),
+        body: JSON.stringify({ agentId: agent.id, messages: apiMessages, activeProjectId }),
         signal: ctrl.signal,
       });
 

@@ -13,6 +13,7 @@ interface RequestBody {
   agentId?: string;
   messages: ChatMessage[];
   model?: string;
+  activeProjectId?: string | null;
 }
 
 export async function POST(req: Request) {
@@ -25,6 +26,12 @@ export async function POST(req: Request) {
 
   const agent = body.agentId ? getAgent(body.agentId) : AGENTS[0];
   if (!agent) return new Response(JSON.stringify({ error: "Unknown agent" }), { status: 404 });
+
+  // Persistent operator/business/project context from the Obsidian vault.
+  const contextBlock = await buildContextBlock(body.activeProjectId);
+  const composedSystem = contextBlock
+    ? `${contextBlock}\n\n---\n\n${agent.systemPrompt}`
+    : agent.systemPrompt;
 
   if (isHermesAgent(agent)) {
     return streamFromHermes(agent, body);
@@ -72,7 +79,7 @@ export async function POST(req: Request) {
               "x-goog-api-key": geminiKey,
             },
             body: JSON.stringify({
-              systemInstruction: { parts: [{ text: agent.systemPrompt }] },
+              systemInstruction: { parts: [{ text: composedSystem }] },
               contents,
               generationConfig: { maxOutputTokens: 2048 },
             }),
@@ -146,7 +153,7 @@ export async function POST(req: Request) {
         const response = await client.messages.stream({
           model: body.model || agent.model,
           max_tokens: 2048,
-          system: agent.systemPrompt,
+          system: composedSystem,
           messages: body.messages.map(m => ({ role: m.role, content: m.content })),
         });
         for await (const event of response) {
