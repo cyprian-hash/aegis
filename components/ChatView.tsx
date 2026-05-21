@@ -37,6 +37,9 @@ export default function ChatView({
 }) {
   const c = COLOR_MAP[agent.color];
   const [text, setText] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<{ name: string; mimeType: string; data?: string; text?: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const supportsFiles = agent.id === "gemini-08";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>(() => [
@@ -82,13 +85,63 @@ export default function ChatView({
     inputRef.current?.focus();
   }, [agent.id]);
 
+
+  const readFileToAttachment = async (file: File) => {
+    const name = file.name;
+    const lower = name.toLowerCase();
+    // Text-like: read as text
+    if (file.type.startsWith("text/") || lower.endsWith(".md") || lower.endsWith(".txt") || lower.endsWith(".csv")) {
+      const text = await file.text();
+      return { name, mimeType: "text/plain", text };
+    }
+    // .docx: convert to text with mammoth
+    if (lower.endsWith(".docx")) {
+      try {
+        const mammoth = (await import("mammoth")).default || (await import("mammoth"));
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await (mammoth as any).extractRawText({ arrayBuffer });
+        return { name, mimeType: "text/plain", text: result.value };
+      } catch {
+        return { name, mimeType: "text/plain", text: `[Could not read ${name}. Try exporting it as PDF.]` };
+      }
+    }
+    // PDF + images: base64 inline_data
+    if (file.type === "application/pdf" || file.type.startsWith("image/")) {
+      const buf = await file.arrayBuffer();
+      let binary = "";
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+      return { name, mimeType: file.type, data: base64 };
+    }
+    // Fallback: try as text
+    try {
+      const text = await file.text();
+      return { name, mimeType: "text/plain", text };
+    } catch {
+      return { name, mimeType: "application/octet-stream", text: `[Unsupported file type: ${name}]` };
+    }
+  };
+
+  const onFilesPicked = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const next: { name: string; mimeType: string; data?: string; text?: string }[] = [];
+    for (const f of Array.from(files)) {
+      next.push(await readFileToAttachment(f));
+    }
+    setPendingFiles(prev => [...prev, ...next]);
+  };
+
   const dispatch = async (q: string) => {
-    if (!q.trim() || busy) return;
+    if ((!q.trim() && pendingFiles.length === 0) || busy) return;
     setError(null);
 
-    const userMsg: Msg = { id: idCounter.current++, role: "user", text: q, ts: new Date() };
+    const fileNote = pendingFiles.length ? (q.trim() ? "\n\n" : "") + pendingFiles.map(f => `📎 ${f.name}`).join("\n") : "";
+    const userMsg: Msg = { id: idCounter.current++, role: "user", text: q + fileNote, ts: new Date() };
     setMessages(prev => [...prev, userMsg]);
     setText("");
+    const sentFiles = pendingFiles;
+    setPendingFiles([]);
     setBusy(true);
 
     // build API messages from current chat history (excluding system messages)
@@ -111,7 +164,7 @@ export default function ChatView({
       const res = await fetch("/api/claude", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId: agent.id, messages: apiMessages, activeProjectId }),
+        body: JSON.stringify({ agentId: agent.id, messages: apiMessages, activeProjectId, attachments: sentFiles }),
         signal: ctrl.signal,
       });
 
@@ -321,10 +374,36 @@ export default function ChatView({
 
       {/* COMPOSER */}
       <div className="border-t border-white/[0.06] bg-black/30 px-3 md:px-5 py-3">
+        {pendingFiles.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {pendingFiles.map((f, i) => (
+              <span key={i} className="flex items-center gap-1.5 rounded-lg bg-white/[0.05] border border-white/10 px-2 py-1 text-[11px] text-white/70">
+                <Paperclip className="h-3 w-3" strokeWidth={1.5} />
+                {f.name}
+                <button onClick={() => setPendingFiles(prev => prev.filter((_, j) => j !== i))}
+                  className="ml-1 text-white/40 hover:text-white">
+                  <X className="h-3 w-3" strokeWidth={2} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex items-end gap-2 rounded-2xl bg-white/[0.03] border border-white/10 focus-within:border-white/30 transition-colors px-3 py-2">
-          <button className="h-8 w-8 grid place-items-center rounded-full hover:bg-white/5 text-white/40 hover:text-white shrink-0">
+          <button
+            onClick={() => supportsFiles && fileInputRef.current?.click()}
+            disabled={!supportsFiles}
+            title={supportsFiles ? "Attach PDF, image, markdown, or Word doc" : "File upload is available on GEMINI-08 (Vision Core)"}
+            className={`h-8 w-8 grid place-items-center rounded-full shrink-0 ${supportsFiles ? "hover:bg-white/5 text-white/40 hover:text-white" : "text-white/15 cursor-not-allowed"}`}>
             <Paperclip className="h-4 w-4" strokeWidth={1.5} />
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.md,.txt,.csv,.docx,application/pdf,image/*,text/*"
+            className="hidden"
+            onChange={(e) => { onFilesPicked(e.target.files); if (e.target) e.target.value = ""; }}
+          />
           <textarea
             ref={inputRef}
             value={text}
@@ -374,10 +453,10 @@ export default function ChatView({
           </button>
           <motion.button
             onClick={() => dispatch(text)}
-            disabled={!text.trim() || busy}
+            disabled={(!text.trim() && pendingFiles.length === 0) || busy}
             whileTap={{ scale: 0.92 }}
             className="h-8 w-8 grid place-items-center rounded-full shrink-0 transition-opacity disabled:opacity-30"
-            style={{ background: c.hex, color: "#000", boxShadow: text.trim() && !busy ? `0 0 14px ${c.glow}` : "none" }}
+            style={{ background: c.hex, color: "#000", boxShadow: (text.trim() || pendingFiles.length) && !busy ? `0 0 14px ${c.glow}` : "none" }}
           >
             <Send className="h-3.5 w-3.5" strokeWidth={2.5} />
           </motion.button>

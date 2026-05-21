@@ -15,6 +15,15 @@ interface RequestBody {
   messages: ChatMessage[];
   model?: string;
   activeProjectId?: string | null;
+  attachments?: Attachment[];
+}
+
+interface Attachment {
+  name: string;
+  mimeType: string;
+  // For PDFs/images: base64 data (no data: prefix). For text/docx: already-extracted text.
+  data?: string;
+  text?: string;
 }
 
 export async function POST(req: Request) {
@@ -67,10 +76,24 @@ export async function POST(req: Request) {
           send("meta", { agent: agent.id, name: agent.name, model });
 
           // Build Gemini "contents" from the message history.
-          const contents = body.messages.map(m => ({
+          const contents: any[] = body.messages.map(m => ({
             role: m.role === "assistant" ? "model" : "user",
             parts: [{ text: m.content }],
           }));
+          // Attach files to the final user turn (if any).
+          const atts = body.attachments || [];
+          if (atts.length && contents.length) {
+            const lastUser = [...contents].reverse().find(c => c.role === "user");
+            if (lastUser) {
+              for (const a of atts) {
+                if (a.text) {
+                  lastUser.parts.push({ text: `\n\n[Attached file: ${a.name}]\n${a.text}` });
+                } else if (a.data) {
+                  lastUser.parts.push({ inline_data: { mime_type: a.mimeType, data: a.data } });
+                }
+              }
+            }
+          }
 
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
           const res = await fetch(url, {
