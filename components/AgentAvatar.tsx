@@ -73,6 +73,28 @@ export default function AgentAvatar({ agentId, size = 56, animated = true }: Ava
 
 const SIGILS: Record<string, { color: AgentColor; glyph: (hex: string, id: string, animated: boolean) => JSX.Element }> = {
 
+  // HERALD: broadcast — signal propagating outward in arcs
+  "herald-09": {
+    color: "coral",
+    glyph: (hex, id, animated) => (
+      <g stroke={hex} strokeWidth="1.5" fill="none" strokeLinecap="round">
+        {/* origin point */}
+        <circle cx="34" cy="50" r="4" fill={hex} stroke="none" />
+        {/* concentric broadcast arcs */}
+        <path d="M44 38 A 18 18 0 0 1 44 62" strokeOpacity="0.75" />
+        <path d="M52 32 A 26 26 0 0 1 52 68" strokeOpacity="0.5" />
+        {animated ? (
+          <motion.path d="M60 26 A 34 34 0 0 1 60 74" strokeOpacity="0.3"
+            animate={{ opacity: [0.1, 0.45, 0.1] }}
+            transition={{ duration: 2.2, repeat: Infinity }} />
+        ) : (
+          <path d="M60 26 A 34 34 0 0 1 60 74" strokeOpacity="0.3" />
+        )}
+      </g>
+    ),
+  },
+
+
   // GEMINI: twin orbits + vision aperture
   "gemini-08": {
     color: "gblue",

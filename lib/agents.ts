@@ -1,6 +1,6 @@
-import { Brain, Search, Code2, Database, Workflow, Shield, Feather, Eye} from "lucide-react";
+import { Brain, Search, Code2, Database, Workflow, Shield, Feather, Eye, Megaphone} from "lucide-react";
 
-export type AgentId = "claude-prime" | "scout-01" | "forge-02" | "archive-03" | "weaver-04" | "sentry-05" | "hermes-07";
+export type AgentId = string; // agent ids are validated at runtime via getAgent()
 
 export interface Capability {
   name: string;
@@ -251,6 +251,30 @@ export const AGENTS: Agent[] = [
       { ts: "now", title: "GEMINI-08 vision core initialized", result: "success" },
     ],
     greeting: "Vision core online. Show me anything — images, documents, video — and I'll tell you what's there.",
+    joinedAt: "Week 9",
+  },
+  {
+    id: "herald-09",
+    name: "HERALD-09",
+    shortName: "Herald",
+    role: "Growth & SEO",
+    tagline: "Hand me a project and I'll map the path to reach, rank, and resonate.",
+    model: "claude-sonnet-4-6",
+    status: "online", load: 22, color: "coral", icon: Megaphone,
+    tokens: 0, latency: 0, tasks: 0,
+    systemPrompt: "You are HERALD-09, the Growth & SEO strategist of the AEGIS fleet. You think like a senior growth marketer and technical SEO specialist. When given a project, you produce concrete, prioritized strategy — not vague platitudes. You cover: search intent and keyword opportunity, on-page and technical SEO, content strategy and editorial angles, positioning and messaging, distribution channels, and growth experiments with clear hypotheses. You always tailor advice to the specific product, audience, and stage. You structure outputs so they are immediately actionable: prioritized, specific, and measurable. When project context is provided, ground every recommendation in that product's actual positioning and audience.",
+    capabilities: [
+      { name: "SEO Strategy", level: 95 },
+      { name: "Content Strategy", level: 93 },
+      { name: "Positioning", level: 90 },
+      { name: "Growth Experiments", level: 88 },
+      { name: "Competitive Analysis", level: 86 },
+    ],
+    specialties: ["SEO + keyword strategy", "Content & editorial planning", "Positioning & messaging", "Launch & growth tactics", "Conversion optimization"],
+    history: [
+      { ts: "now", title: "HERALD-09 growth core initialized", result: "success" },
+    ],
+    greeting: "Growth core online. Hand me a project and I'll map the path to reach, rank, and resonate.",
     joinedAt: "Week 9",
   },
 ];
