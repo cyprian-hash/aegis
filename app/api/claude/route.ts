@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { buildContextBlock } from "@/lib/context";
 import { AGENTS, getAgent, isHermesAgent } from "@/lib/agents";
 
 export const runtime = "nodejs";
