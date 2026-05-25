@@ -73,6 +73,33 @@ export default function AgentAvatar({ agentId, size = 56, animated = true }: Ava
 
 const SIGILS: Record<string, { color: AgentColor; glyph: (hex: string, id: string, animated: boolean) => JSX.Element }> = {
 
+  // VANGUARD: chevron burst — the front line advancing
+  "vanguard-10": {
+    color: "crimson",
+    glyph: (hex, id, animated) => (
+      <g stroke={hex} strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        {/* three advancing chevrons */}
+        <path d="M30 32 L46 50 L30 68" strokeOpacity="0.9" />
+        {animated ? (
+          <>
+            <motion.path d="M44 32 L60 50 L44 68" strokeOpacity="0.6"
+              animate={{ opacity: [0.25, 0.7, 0.25] }}
+              transition={{ duration: 1.8, repeat: Infinity, delay: 0.2 }} />
+            <motion.path d="M58 32 L74 50 L58 68" strokeOpacity="0.35"
+              animate={{ opacity: [0.1, 0.45, 0.1] }}
+              transition={{ duration: 1.8, repeat: Infinity, delay: 0.4 }} />
+          </>
+        ) : (
+          <>
+            <path d="M44 32 L60 50 L44 68" strokeOpacity="0.6" />
+            <path d="M58 32 L74 50 L58 68" strokeOpacity="0.35" />
+          </>
+        )}
+      </g>
+    ),
+  },
+
+
   // HERALD: broadcast — signal propagating outward in arcs
   "herald-09": {
     color: "coral",

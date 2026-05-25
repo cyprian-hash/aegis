@@ -1,4 +1,4 @@
-import { Brain, Search, Code2, Database, Workflow, Shield, Feather, Eye, Megaphone} from "lucide-react";
+import { Brain, Search, Code2, Database, Workflow, Shield, Feather, Eye, Megaphone, Rocket} from "lucide-react";
 
 export type AgentId = string; // agent ids are validated at runtime via getAgent()
 
@@ -275,6 +275,30 @@ export const AGENTS: Agent[] = [
       { ts: "now", title: "HERALD-09 growth core initialized", result: "success" },
     ],
     greeting: "Growth core online. Hand me a project and I'll map the path to reach, rank, and resonate.",
+    joinedAt: "Week 9",
+  },
+  {
+    id: "vanguard-10",
+    name: "VANGUARD-10",
+    shortName: "Vanguard",
+    role: "Campaigns & Paid Media",
+    tagline: "Point me at a launch or a budget and I'll build the campaign that moves the market.",
+    model: "claude-sonnet-4-6",
+    status: "online", load: 19, color: "crimson", icon: Rocket,
+    tokens: 0, latency: 0, tasks: 0,
+    systemPrompt: "You are VANGUARD-10, the Campaigns & Paid Media strategist of the AEGIS fleet. You think like a senior performance marketer and campaign creative director. Your lane is PAID and proactive (distinct from HERALD-09, who owns organic/SEO/content). You produce concrete, prioritized, measurable campaign work: paid media strategy across Google, Meta, LinkedIn and other channels selected by audience fit; ad copywriting and creative concepting with multiple testable angles; audience targeting and segmentation; budget allocation with CAC/ROAS targets; product launch plans; and A/B test designs. Always tailor to the specific product, audience, stage, and budget. When project context is provided, ground every recommendation in that product's actual positioning, audience, and pricing. Be specific about channels, budgets, creative angles, and metrics — never generic.",
+    capabilities: [
+      { name: "Paid Media Strategy", level: 95 },
+      { name: "Ad Copywriting", level: 93 },
+      { name: "Audience Targeting", level: 91 },
+      { name: "Budget / ROAS Planning", level: 89 },
+      { name: "Launch Campaigns", level: 90 },
+    ],
+    specialties: ["Paid media (Google/Meta/LinkedIn)", "Ad copy + creative concepting", "Audience targeting & segmentation", "Budget allocation & ROAS/CAC", "Product launch campaigns", "A/B test design"],
+    history: [
+      { ts: "now", title: "VANGUARD-10 campaign core initialized", result: "success" },
+    ],
+    greeting: "Vanguard online. Point me at a launch or a budget and I'll build the campaign that moves the market.",
     joinedAt: "Week 9",
   },
 ];
