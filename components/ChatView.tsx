@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Paperclip, MoreVertical, ChevronLeft, X, Smile, Mic } from "lucide-react";
+import { Send, Sparkles, Paperclip, MoreVertical, ChevronLeft, X, Smile, Mic, Trash2} from "lucide-react";
 import { Agent } from "@/lib/agents";
 import { COLOR_MAP } from "@/lib/theme";
 import AgentAvatar from "./AgentAvatar";
@@ -84,6 +84,49 @@ export default function ChatView({
   useEffect(() => {
     inputRef.current?.focus();
   }, [agent.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/chats/${agent.id}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (Array.isArray(data.messages) && data.messages.length > 0) {
+          let n = 1;
+          setMessages(data.messages.map((m: any) => ({
+            id: n++, role: m.role, text: m.text, ts: new Date(m.ts || Date.now()),
+          })));
+          idCounter.current = n;
+        } else {
+          setMessages([{ id: 1, role: "assistant", text: agent.greeting, ts: new Date() }]);
+          idCounter.current = 2;
+        }
+      } catch { /* offline or no vault */ }
+    })();
+    return () => { cancelled = true; };
+  }, [agent.id]);
+
+  const persistThread = async (msgs: Msg[]) => {
+    try {
+      await fetch(`/api/chats/${agent.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: msgs
+            .filter(m => m.text && m.text.trim().length > 0)
+            .map(m => ({ role: m.role, text: m.text, ts: (m.ts instanceof Date ? m.ts.toISOString() : new Date().toISOString()) })),
+        }),
+      });
+    } catch { /* best-effort */ }
+  };
+
+  const clearConversation = async () => {
+    try { await fetch(`/api/chats/${agent.id}`, { method: "DELETE" }); } catch {}
+    setMessages([{ id: 1, role: "assistant", text: agent.greeting, ts: new Date() }]);
+    idCounter.current = 2;
+  };
+
 
 
   const readFileToAttachment = async (file: File) => {
@@ -271,6 +314,10 @@ export default function ChatView({
             <span className="capitalize">{agent.status}</span>
             <span className="text-white/20">·</span>
             <span className="truncate">{agent.role}</span>
+            <button onClick={clearConversation} title="Clear conversation"
+              className="ml-auto h-7 w-7 grid place-items-center rounded-full hover:bg-white/5 text-white/30 hover:text-white/70 transition-colors">
+              <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </button>
           </div>
         </div>
         <button className="h-8 w-8 grid place-items-center rounded-full hover:bg-white/5 text-white/40 hover:text-white">
