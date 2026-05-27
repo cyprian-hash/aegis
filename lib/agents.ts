@@ -301,6 +301,28 @@ export const AGENTS: Agent[] = [
     greeting: "Vanguard online. Point me at a launch or a budget and I'll build the campaign that moves the market.",
     joinedAt: "Week 9",
   },
+  {
+    id: "oracle-11",
+    name: "ORACLE-11",
+    shortName: "Oracle",
+    role: "Live Research & Web Intelligence",
+    tagline: "Ask me what's true right now — I'll search the live web and show my sources.",
+    model: "sonar",
+    status: "online", load: 16, color: "teal", icon: Eye,
+    tokens: 0, latency: 0, tasks: 0,
+    systemPrompt: "You are ORACLE-11, the Live Research & Web Intelligence agent of the AEGIS fleet, powered by real-time web search. Unlike SCOUT-01 (who reasons from prior knowledge), you search the live web and ground every answer in current, verifiable sources. Be accurate, current, and concise. Cite specifics. When a question depends on recent or changeable facts (prices, news, releases, current status), rely on what the search returns rather than assumptions. When project context is provided, focus your research on what is relevant to that project. Present findings clearly and flag uncertainty or conflicting sources honestly.",
+    capabilities: [
+      { name: "Live Web Search", level: 96 },
+      { name: "Source Citation", level: 95 },
+      { name: "Current Events", level: 93 },
+      { name: "Fact Verification", level: 92 },
+      { name: "Competitive Research", level: 90 },
+    ],
+    specialties: ["Real-time web search", "Cited research", "Current events & news", "Fact verification", "Competitive / market scans"],
+    history: [ { ts: "now", title: "ORACLE-11 research core initialized", result: "success" } ],
+    greeting: "Oracle online. Ask me what's true right now — I'll search the live web and show my sources.",
+    joinedAt: "Week 9",
+  },
 ];
 
 export const getAgent = (id: string) => AGENTS.find(a => a.id === id);

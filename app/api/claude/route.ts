@@ -55,6 +55,79 @@ export async function POST(req: Request) {
     );
   }
 
+  // ---- Perplexity (ORACLE) branch -----------------------------------------
+  const _model = body.model || agent.model;
+  if (_model.startsWith("sonar")) {
+    const pplxKey = process.env.PERPLEXITY_API_KEY;
+    if (!pplxKey) {
+      return new Response(
+        JSON.stringify({ error: "PERPLEXITY_API_KEY not set in .env.local" }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const model = process.env.PERPLEXITY_MODEL || _model;
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (event: string, data: any) => {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        };
+        try {
+          send("meta", { agent: agent.id, name: agent.name, model });
+          const messages = [
+            { role: "system", content: composedSystem },
+            ...body.messages.map(m => ({ role: m.role, content: m.content })),
+          ];
+          const resp = await fetch("https://api.perplexity.ai/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${pplxKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ model, messages, stream: true }),
+          });
+          if (!resp.ok || !resp.body) {
+            const errText = await resp.text().catch(() => "");
+            send("error", { message: `Perplexity API ${resp.status}: ${errText.slice(0, 300)}` });
+            controller.close(); return;
+          }
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let citations: string[] = [];
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data:")) continue;
+              const payload = trimmed.slice(5).trim();
+              if (payload === "[DONE]") continue;
+              try {
+                const json = JSON.parse(payload);
+                if (Array.isArray(json.citations) && json.citations.length) citations = json.citations;
+                const delta = json.choices?.[0]?.delta?.content;
+                if (delta) send("delta", { text: delta });
+              } catch { /* partial chunk */ }
+            }
+          }
+          if (citations.length) {
+            const list = citations.map((c, i) => `${i + 1}. ${c}`).join("\n");
+            send("delta", { text: `\n\n**Sources:**\n${list}` });
+          }
+          send("done", { ok: true });
+          controller.close();
+        } catch (err: any) {
+          send("error", { message: err?.message || "Perplexity request failed" });
+          controller.close();
+        }
+      },
+    });
+    return new Response(stream, {
+      headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", "Connection": "keep-alive" },
+    });
+  }
+
   // ---- Gemini branch -------------------------------------------------------
   const effectiveModel = body.model || agent.model;
   if (effectiveModel.startsWith("gemini")) {

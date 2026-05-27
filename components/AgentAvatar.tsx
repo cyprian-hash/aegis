@@ -73,6 +73,25 @@ export default function AgentAvatar({ agentId, size = 56, animated = true }: Ava
 
 const SIGILS: Record<string, { color: AgentColor; glyph: (hex: string, id: string, animated: boolean) => JSX.Element }> = {
 
+  "oracle-11": {
+    color: "teal",
+    glyph: (hex, id, animated) => (
+      <g stroke={hex} fill="none" strokeLinecap="round">
+        <circle cx="50" cy="50" r="30" strokeWidth="1.4" strokeOpacity="0.4" />
+        <path d="M28 50 Q50 32 72 50 Q50 68 28 50 Z" strokeWidth="1.6" strokeOpacity="0.85" />
+        {animated ? (
+          <motion.circle cx="50" cy="50" r="8" strokeWidth="1.6" fill={hex} fillOpacity="0.18"
+            animate={{ r: [7, 9, 7], fillOpacity: [0.12, 0.28, 0.12] }}
+            transition={{ duration: 2.4, repeat: Infinity }} />
+        ) : (
+          <circle cx="50" cy="50" r="8" strokeWidth="1.6" fill={hex} fillOpacity="0.18" />
+        )}
+        <circle cx="50" cy="50" r="2.4" fill={hex} stroke="none" />
+      </g>
+    ),
+  },
+
+
   // VANGUARD: chevron burst — the front line advancing
   "vanguard-10": {
     color: "crimson",
