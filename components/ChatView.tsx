@@ -270,6 +270,12 @@ export default function ChatView({
             agentText: streamedText,
           }),
         }).catch(() => { /* vault save is best-effort */ });
+        // Persist resumable thread (append this exchange) for reload-on-open.
+        fetch(`/api/chats/${agent.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ append: { userText: q, agentText: streamedText } }),
+        }).catch(() => { /* thread save best-effort */ });
       }
     }
   };
