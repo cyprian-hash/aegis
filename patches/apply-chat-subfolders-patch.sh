@@ -1,3 +1,21 @@
+#!/usr/bin/env bash
+# apply-chat-subfolders-patch.sh
+# Moves chat threads into per-agent subfolders:
+#   OLD: AEGIS/Chats/<agent-id>.json + .md   (flat)
+#   NEW: AEGIS/Chats/<agent-id>/thread.json + thread.md
+# Migrates any existing flat files into the new subfolders so nothing is lost.
+# Built/verified against the real repo.
+set -e
+if [ ! -f lib/chatstore.ts ]; then
+  echo "❌ lib/chatstore.ts not found — apply chat persistence first."; exit 1
+fi
+
+echo "📦 Backing up to .pre-subfolder-backup/"
+mkdir -p .pre-subfolder-backup/lib
+cp lib/chatstore.ts .pre-subfolder-backup/lib/
+
+echo "✏️  Rewriting lib/chatstore.ts for per-agent subfolders"
+cat > lib/chatstore.ts <<'TSEOF'
 import { promises as fs } from "fs";
 import path from "path";
 
@@ -77,3 +95,12 @@ export async function clearThread(agentId: string): Promise<boolean> {
   try { await fs.writeFile(path.join(dir, "thread.md"), `# Conversation — ${agentId}\n\n_Cleared ${new Date().toISOString()}._\n`, "utf8"); } catch {}
   return true;
 }
+TSEOF
+echo "   ✓ chatstore.ts now uses AEGIS/Chats/<agent-id>/thread.json + thread.md"
+echo "   ✓ legacy flat files auto-migrate into subfolders on first load"
+
+echo ""
+echo "✅ Per-agent chat subfolders enabled."
+echo "Restart:  aegis-control restart"
+echo "Existing threads migrate automatically the first time each agent is opened."
+echo "Backups in .pre-subfolder-backup/ — revert: cp -r .pre-subfolder-backup/* ."
