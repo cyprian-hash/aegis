@@ -39,7 +39,7 @@ export default function ChatView({
   const [text, setText] = useState("");
   const [pendingFiles, setPendingFiles] = useState<{ name: string; mimeType: string; data?: string; text?: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supportsFiles = agent.id === "gemini-08";
+  const supportsFiles = agent.id !== "oracle-11"; // ORACLE (Perplexity) is text-only
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>(() => [
@@ -445,7 +445,7 @@ export default function ChatView({
           <button
             onClick={() => supportsFiles && fileInputRef.current?.click()}
             disabled={!supportsFiles}
-            title={supportsFiles ? "Attach PDF, image, markdown, or Word doc" : "File upload is available on GEMINI-08 (Vision Core)"}
+            title={supportsFiles ? "Attach PDF, image, markdown, or Word doc" : "ORACLE-11 is text-only (live web search) and cannot take file uploads"}
             className={`h-8 w-8 grid place-items-center rounded-full shrink-0 ${supportsFiles ? "hover:bg-white/5 text-white/40 hover:text-white" : "text-white/15 cursor-not-allowed"}`}>
             <Paperclip className="h-4 w-4" strokeWidth={1.5} />
           </button>

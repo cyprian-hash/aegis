@@ -238,6 +238,33 @@ export async function POST(req: Request) {
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
+  // Build Claude messages, attaching any files to the final user turn.
+  function buildClaudeMessages(): any[] {
+    const msgs: any[] = body.messages.map(m => ({ role: m.role, content: m.content }));
+    const atts = body.attachments || [];
+    if (atts.length && msgs.length) {
+      // find last user message
+      let idx = -1;
+      for (let i = msgs.length - 1; i >= 0; i--) { if (msgs[i].role === "user") { idx = i; break; } }
+      if (idx >= 0) {
+        const blocks: any[] = [];
+        const baseText = typeof msgs[idx].content === "string" ? msgs[idx].content : "";
+        if (baseText) blocks.push({ type: "text", text: baseText });
+        for (const a of atts) {
+          if (a.text) {
+            blocks.push({ type: "text", text: `\n\n[Attached file: ${a.name}]\n${a.text}` });
+          } else if (a.data && a.mimeType === "application/pdf") {
+            blocks.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: a.data } });
+          } else if (a.data && a.mimeType && a.mimeType.startsWith("image/")) {
+            blocks.push({ type: "image", source: { type: "base64", media_type: a.mimeType, data: a.data } });
+          }
+        }
+        if (blocks.length) msgs[idx] = { role: "user", content: blocks };
+      }
+    }
+    return msgs;
+  }
+
   const client = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -251,7 +278,7 @@ export async function POST(req: Request) {
           model: body.model || agent.model,
           max_tokens: 2048,
           system: composedSystem,
-          messages: body.messages.map(m => ({ role: m.role, content: m.content })),
+          messages: buildClaudeMessages(),
         });
         for await (const event of response) {
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
