@@ -57,7 +57,7 @@ export default function ProjectSwitcher({ projects, activeId, onChange, onOpenPr
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-[280px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-white/[0.08] bg-black/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
+            className="absolute right-0 top-full mt-2 w-[280px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-white/[0.08] bg-[#0a0a0a] backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
           >
             <button
               onClick={() => { onChange(null); setOpen(false); }}
@@ -68,7 +68,7 @@ export default function ProjectSwitcher({ projects, activeId, onChange, onOpenPr
               {!activeId && <Check className="h-3 w-3 text-amber-400" strokeWidth={2.5} />}
             </button>
 
-            <div className="border-t border-white/[0.04] max-h-[320px] overflow-y-auto">
+            <div className="border-t border-white/[0.04] max-h-[min(60vh,420px)] overflow-y-auto overscroll-contain">
               {projects.length === 0 && (
                 <div className="px-3.5 py-4 text-[11px] text-white/40 text-center">
                   No projects yet
