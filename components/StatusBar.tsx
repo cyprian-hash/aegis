@@ -22,11 +22,11 @@ export default function StatusBar({ projects, activeId, onChangeProject, onOpenP
   return (
     <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-3 text-[10px] tracking-[0.22em] text-white/50 font-mono backdrop-blur-xl bg-black/20">
       <div className="flex items-center gap-5 min-w-0">
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
           <motion.span className="block h-1.5 w-1.5 rounded-full bg-amber-400"
             animate={{ opacity: [1, 0.3, 1], boxShadow: ["0 0 4px #f5b400", "0 0 12px #f5b400", "0 0 4px #f5b400"] }}
             transition={{ duration: 1.6, repeat: Infinity }} />
-          <span className="text-white/80">AEGIS · MISSION CONTROL</span>
+          <span className="text-white/80 whitespace-nowrap">AEGIS<span className="hidden sm:inline"> · MISSION CONTROL</span></span>
           <span className="hidden lg:inline text-white/30 font-mono tracking-[0.32em]" style={{ letterSpacing: "0.32em" }}>PRIVÉ SYSTEMS</span>
         </div>
         <span className="text-white/25 hidden sm:inline shrink-0">v4.7.0</span>

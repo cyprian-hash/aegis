@@ -39,7 +39,7 @@ export default function ProjectSwitcher({ projects, activeId, onChange, onOpenPr
               background: activeTokens!.hex,
               boxShadow: `0 0 8px ${activeTokens!.glow}`,
             }} />
-            <span className="text-[11px] font-mono tracking-[0.15em] text-white/85">{active.name.toUpperCase()}</span>
+            <span className="text-[11px] font-mono tracking-[0.15em] text-white/85 truncate max-w-[120px] sm:max-w-[200px]">{active.name.toUpperCase()}</span>
           </>
         ) : (
           <>
