@@ -57,11 +57,11 @@ export default function ProjectSwitcher({ projects, activeId, onChange, onOpenPr
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-[280px] rounded-xl border border-white/[0.08] bg-black/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
+            className="absolute right-0 top-full mt-2 w-[280px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-white/[0.08] bg-black/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
           >
             <button
               onClick={() => { onChange(null); setOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-white/[0.04] transition-colors ${!activeId ? "bg-white/[0.03]" : ""}`}
+              className={`w-full flex items-center gap-2 px-3.5 py-2.5 min-w-0 hover:bg-white/[0.04] transition-colors ${!activeId ? "bg-white/[0.03]" : ""}`}
             >
               <Layers className="h-3.5 w-3.5 text-white/50" strokeWidth={1.5} />
               <span className="flex-1 text-left text-[12px] text-white/85 font-medium">All projects</span>
@@ -81,7 +81,7 @@ export default function ProjectSwitcher({ projects, activeId, onChange, onOpenPr
                   <button
                     key={p.id}
                     onClick={() => { onChange(p.id); setOpen(false); }}
-                    className={`w-full flex items-center gap-2.5 px-3.5 py-2 hover:bg-white/[0.04] transition-colors ${isActive ? "bg-white/[0.03]" : ""}`}
+                    className={`w-full flex items-center gap-2.5 px-3.5 py-2 min-w-0 hover:bg-white/[0.04] transition-colors ${isActive ? "bg-white/[0.03]" : ""}`}
                   >
                     <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{
                       background: c.hex, boxShadow: `0 0 6px ${c.glow}`,
