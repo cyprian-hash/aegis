@@ -1,4 +1,5 @@
 export const COLOR_MAP: Record<string, { hex: string; glow: string; soft: string }> = {
+  ledgergreen: { hex: "#15803D", glow: "rgba(21,128,61,0.55)", soft: "rgba(21,128,61,0.08)" },
   teal: { hex: "#14B8A6", glow: "rgba(20,184,166,0.55)", soft: "rgba(20,184,166,0.08)" },
   crimson: { hex: "#E11D48", glow: "rgba(225,29,72,0.55)",   soft: "rgba(225,29,72,0.08)" },
   coral:   { hex: "#FF6B4A", glow: "rgba(255,107,74,0.55)",  soft: "rgba(255,107,74,0.08)" },

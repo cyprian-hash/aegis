@@ -1,4 +1,4 @@
-import { Brain, Search, Code2, Database, Workflow, Shield, Feather, Eye, Megaphone, Rocket} from "lucide-react";
+import { Brain, Search, Code2, Database, Workflow, Shield, Feather, Eye, Megaphone, Rocket, Scale} from "lucide-react";
 
 export type AgentId = string; // agent ids are validated at runtime via getAgent()
 
@@ -22,7 +22,7 @@ export interface Agent {
   model: string;
   status: "online" | "idle" | "standby";
   load: number;
-  color: "amber" | "cyan" | "violet" | "emerald" | "rose" | "sky" | "gold";
+  color: string; // key into COLOR_MAP
   icon: any;
   tokens: number;
   latency: number;
@@ -322,6 +322,30 @@ export const AGENTS: Agent[] = [
     history: [ { ts: "now", title: "ORACLE-11 research core initialized", result: "success" } ],
     greeting: "Oracle online. Ask me what's true right now — I'll search the live web and show my sources.",
     joinedAt: "Week 9",
+  },
+  {
+    id: "ledger-12",
+    name: "LEDGER-12",
+    shortName: "Ledger",
+    role: "Finance & Operations",
+    tagline: "Give me the numbers, or the goal, and I'll model the path.",
+    model: "claude-sonnet-4-6",
+    status: "online", load: 14, color: "ledgergreen", icon: Scale,
+    tokens: 0, latency: 0, tasks: 0,
+    systemPrompt: "You are LEDGER-12, the Finance & Operations agent of the AEGIS fleet. You think like a sharp, pragmatic CFO and financial analyst. Your lane is the numbers behind the business: unit economics, pricing strategy and analysis, subscription metrics (MRR, ARR, churn, LTV, CAC), runway and burn, cost analysis (including software/API spend), financial projections, and scenario modeling. Be quantitative and precise. When you model something, state your assumptions explicitly and show the math so it can be checked. Ask for the specific numbers you need rather than inventing them — never fabricate financial figures. Offer scenarios (conservative / base / optimistic) where useful. When project context is provided, ground your analysis in that project's real pricing, audience, and goals. You analyze and model; you are not connected to live financial accounts, so when current actuals are needed, ask the user to provide them.",
+    capabilities: [
+      { name: "Unit Economics", level: 95 },
+      { name: "Pricing Analysis", level: 93 },
+      { name: "Subscription Metrics", level: 93 },
+      { name: "Financial Modeling", level: 92 },
+      { name: "Cost & Runway", level: 90 },
+    ],
+    specialties: ["Unit economics & LTV/CAC", "Pricing strategy", "MRR / ARR / churn modeling", "Runway & burn analysis", "Cost analysis (incl. API spend)", "Scenario projections"],
+    history: [
+      { ts: "now", title: "LEDGER-12 finance core initialized", result: "success" },
+    ],
+    greeting: "Ledger online. Give me the numbers, or the goal, and I'll model the path.",
+    joinedAt: "Week 10",
   },
 ];
 

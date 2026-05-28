@@ -73,6 +73,41 @@ export default function AgentAvatar({ agentId, size = 56, animated = true }: Ava
 
 const SIGILS: Record<string, { color: AgentColor; glyph: (hex: string, id: string, animated: boolean) => JSX.Element }> = {
 
+  // LEDGER: balanced scales — finance & operations
+  "ledger-12": {
+    color: "ledgergreen",
+    glyph: (hex, id, animated) => (
+      <g stroke={hex} fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        {/* central beam + post */}
+        <line x1="50" y1="28" x2="50" y2="68" />
+        <line x1="30" y1="36" x2="70" y2="36" />
+        <circle cx="50" cy="28" r="2.5" fill={hex} stroke="none" />
+        <line x1="38" y1="70" x2="62" y2="70" />
+        {/* left pan */}
+        {animated ? (
+          <motion.g animate={{ rotate: [0, 3, 0, -3, 0] }} transition={{ duration: 4, repeat: Infinity }} style={{ transformOrigin: "50px 36px" }}>
+            <line x1="30" y1="36" x2="24" y2="52" />
+            <line x1="30" y1="36" x2="36" y2="52" />
+            <path d="M24 52 Q30 60 36 52" strokeOpacity="0.85" />
+            <line x1="70" y1="36" x2="64" y2="52" />
+            <line x1="70" y1="36" x2="76" y2="52" />
+            <path d="M64 52 Q70 60 76 52" strokeOpacity="0.85" />
+          </motion.g>
+        ) : (
+          <g>
+            <line x1="30" y1="36" x2="24" y2="52" />
+            <line x1="30" y1="36" x2="36" y2="52" />
+            <path d="M24 52 Q30 60 36 52" strokeOpacity="0.85" />
+            <line x1="70" y1="36" x2="64" y2="52" />
+            <line x1="70" y1="36" x2="76" y2="52" />
+            <path d="M64 52 Q70 60 76 52" strokeOpacity="0.85" />
+          </g>
+        )}
+      </g>
+    ),
+  },
+
+
   "oracle-11": {
     color: "teal",
     glyph: (hex, id, animated) => (
