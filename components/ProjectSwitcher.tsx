@@ -57,7 +57,7 @@ export default function ProjectSwitcher({ projects, activeId, onChange, onOpenPr
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-2 w-[280px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-white/[0.08] bg-[#0a0a0a] backdrop-blur-xl shadow-2xl z-50 overflow-hidden"
+            className="absolute right-0 top-full mt-2 w-[280px] max-w-[calc(100vw-1.5rem)] rounded-xl border border-white/[0.08] bg-[#0a0a0a] backdrop-blur-xl shadow-2xl z-[120] overflow-hidden"
           >
             <button
               onClick={() => { onChange(null); setOpen(false); }}
