@@ -24,6 +24,30 @@ export default function OverviewView({
   const [tick, setTick] = useState(0);
   useEffect(() => { const id = setInterval(() => setTick(t => t + 1), 1500); return () => clearInterval(id); }, []);
 
+  // Time-based greeting (UTC, to match the UTC clock in the status bar).
+  const [greeting, setGreeting] = useState("Welcome");
+  useEffect(() => {
+    const compute = () => {
+      const h = new Date().getUTCHours();
+      setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+    };
+    compute();
+    const id = setInterval(compute, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Time-based greeting (UTC, to match the UTC clock in the status bar).
+  const [greeting, setGreeting] = useState("Welcome");
+  useEffect(() => {
+    const compute = () => {
+      const h = new Date().getUTCHours();
+      setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+    };
+    compute();
+    const id = setInterval(compute, 60000);
+    return () => clearInterval(id);
+  }, []);
+
   const tokensPerSec = useMemo(() => 2840 + Math.round(Math.sin(tick / 3) * 320), [tick]);
   const meshLoad = useMemo(() => 42 + Math.round(Math.sin(tick / 5) * 14), [tick]);
   const activeTasks = AGENTS.reduce((a, b) => a + b.tasks, 0);
@@ -44,7 +68,7 @@ export default function OverviewView({
               MISSION CONTROL · OPERATIONAL
             </motion.div>
             <h1 className="font-display text-5xl md:text-7xl text-white tracking-tight leading-[0.95]">
-              Good evening,<br />
+              {greeting},<br />
               <span className="bg-gradient-to-r from-white/40 via-white/60 to-white/30 bg-clip-text text-transparent">Commander.</span>
             </h1>
             <div className="mt-5 flex items-center gap-4 text-[12px] text-white/55 font-mono flex-wrap">
