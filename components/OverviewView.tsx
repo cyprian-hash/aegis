@@ -36,18 +36,6 @@ export default function OverviewView({
     return () => clearInterval(id);
   }, []);
 
-  // Time-based greeting (UTC, to match the UTC clock in the status bar).
-  const [greeting, setGreeting] = useState("Welcome");
-  useEffect(() => {
-    const compute = () => {
-      const h = new Date().getUTCHours();
-      setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
-    };
-    compute();
-    const id = setInterval(compute, 60000);
-    return () => clearInterval(id);
-  }, []);
-
   const tokensPerSec = useMemo(() => 2840 + Math.round(Math.sin(tick / 3) * 320), [tick]);
   const meshLoad = useMemo(() => 42 + Math.round(Math.sin(tick / 5) * 14), [tick]);
   const activeTasks = AGENTS.reduce((a, b) => a + b.tasks, 0);
