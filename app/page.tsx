@@ -11,6 +11,7 @@ import MessengerView from "@/components/MessengerView";
 import TelemetryView from "@/components/TelemetryView";
 import NetworkView from "@/components/NetworkView";
 import MemoryView from "@/components/MemoryView";
+import LedgerView from "@/components/LedgerView";
 import LogsView from "@/components/LogsView";
 import MissionsView from "@/components/MissionsView";
 import MCPView from "@/components/MCPView";
@@ -91,6 +92,7 @@ export default function Page() {
                     {active === "telemetry" && <TelemetryView />}
                     {active === "network"   && <NetworkView onSelect={handleProfile} />}
                     {active === "memory"    && <MemoryView />}
+                    {active === "ledger"    && <LedgerView />}
                   </>
                 )}
               </motion.div>

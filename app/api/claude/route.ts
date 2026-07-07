@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { buildContextBlock } from "@/lib/context";
 import { AGENTS, getAgent, isHermesAgent } from "@/lib/agents";
+import { logUsage } from "@/lib/usagelog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -92,6 +93,7 @@ export async function POST(req: Request) {
           const decoder = new TextDecoder();
           let buffer = "";
           let citations: string[] = [];
+          let pplxUsage: any = null;
           while (true) {
             const { value, done } = await reader.read();
             if (done) break;
@@ -106,6 +108,7 @@ export async function POST(req: Request) {
               try {
                 const json = JSON.parse(payload);
                 if (Array.isArray(json.citations) && json.citations.length) citations = json.citations;
+                if (json.usage) pplxUsage = json.usage;
                 const delta = json.choices?.[0]?.delta?.content;
                 if (delta) send("delta", { text: delta });
               } catch { /* partial chunk */ }
@@ -115,6 +118,7 @@ export async function POST(req: Request) {
             const list = citations.map((c, i) => `${i + 1}. ${c}`).join("\n");
             send("delta", { text: `\n\n**Sources:**\n${list}` });
           }
+          if (pplxUsage) logUsage({ agentId: agent.id, model, provider: "perplexity", inputTokens: pplxUsage.prompt_tokens || 0, outputTokens: pplxUsage.completion_tokens || 0 });
           send("done", { ok: true });
           controller.close();
         } catch (err: any) {
@@ -192,6 +196,7 @@ export async function POST(req: Request) {
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
           let buf = "";
+          let gemUsage: any = null;
           while (true) {
             const { value, done } = await reader.read();
             if (done) break;
@@ -206,6 +211,7 @@ export async function POST(req: Request) {
               try {
                 const json = JSON.parse(payload);
                 const parts = json?.candidates?.[0]?.content?.parts;
+                if (json?.usageMetadata) gemUsage = json.usageMetadata;
                 if (Array.isArray(parts)) {
                   for (const part of parts) {
                     if (part?.text) send("delta", { text: part.text });
@@ -214,6 +220,7 @@ export async function POST(req: Request) {
               } catch { /* skip non-JSON keepalive lines */ }
             }
           }
+          if (gemUsage) logUsage({ agentId: agent.id, model: effectiveModel, provider: "gemini", inputTokens: gemUsage.promptTokenCount || 0, outputTokens: gemUsage.candidatesTokenCount || 0 });
           send("done", { ok: true });
         } catch (err: any) {
           send("error", { message: err?.message || "Gemini stream failed" });
@@ -280,10 +287,16 @@ export async function POST(req: Request) {
           system: composedSystem,
           messages: buildClaudeMessages(),
         });
+        let usageIn = 0, usageOut = 0;
         for await (const event of response) {
           if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
             send("delta", { text: event.delta.text });
+          } else if (event.type === "message_start") {
+            usageIn = (event as any).message?.usage?.input_tokens || 0;
+          } else if (event.type === "message_delta") {
+            usageOut = (event as any).usage?.output_tokens ?? usageOut;
           } else if (event.type === "message_stop") {
+            logUsage({ agentId: agent.id, model: body.model || agent.model, provider: "anthropic", inputTokens: usageIn, outputTokens: usageOut });
             send("done", { ok: true });
           }
         }

@@ -1,13 +1,13 @@
 "use client";
 import { motion } from "framer-motion";
 import {
-  Gauge, Bot, MessageSquare, Activity, Network, Database,
+  Gauge, Bot, MessageSquare, Activity, Network, Database, Wallet,
   ScrollText, Compass, Plug, Briefcase,
 } from "lucide-react";
 
 export type ViewId =
   | "overview" | "agents" | "chat" | "projects" | "telemetry" | "network" | "memory"
-  | "logs" | "missions" | "mcp";
+  | "logs" | "missions" | "mcp" | "ledger";
 
 export const NAV: { id: ViewId; label: string; icon: any; group?: string }[] = [
   { id: "overview",  label: "Overview",   icon: Gauge },
@@ -20,6 +20,7 @@ export const NAV: { id: ViewId; label: string; icon: any; group?: string }[] = [
   { id: "telemetry", label: "Telemetry",  icon: Activity,  group: "SYSTEM" },
   { id: "network",   label: "Network",    icon: Network },
   { id: "memory",    label: "Memory",     icon: Database },
+  { id: "ledger",    label: "Ledger",     icon: Wallet },
 ];
 
 export default function Sidebar({ active, setActive }: { active: ViewId; setActive: (v: ViewId) => void }) {
