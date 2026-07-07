@@ -23,11 +23,27 @@ const CACHE_MS = 60 * 60 * 1000;
 
 async function getInstalledVersion(): Promise<{ version: string | null; path: string | null }> {
   try {
-    const { stdout: pathOut } = await execAsync("which hermes", { timeout: 3000 });
-    const hermesPath = pathOut.trim() || null;
+    // `which` can fail under LaunchAgent (minimal PATH), so also try common paths.
+    let hermesPath: string | null = null;
+    try {
+      const { stdout: pathOut } = await execAsync("which hermes", { timeout: 3000 });
+      hermesPath = pathOut.trim() || null;
+    } catch {}
+    if (!hermesPath) {
+      const home = process.env.HOME || "";
+      const candidates = [
+        `${home}/.local/bin/hermes`,
+        "/opt/homebrew/bin/hermes",
+        "/usr/local/bin/hermes",
+        `${home}/.hermes/bin/hermes`,
+      ];
+      for (const c of candidates) {
+        try { await execAsync(`test -x "${c}"`, { timeout: 1500 }); hermesPath = c; break; } catch {}
+      }
+    }
     if (!hermesPath) return { version: null, path: null };
 
-    const { stdout } = await execAsync("hermes --version 2>&1 | head -3", { timeout: 5000 });
+    const { stdout } = await execAsync(`"${hermesPath}" --version 2>&1 | head -3`, { timeout: 5000 });
     // Output formats seen in the wild:
     //   "Hermes Agent v0.14.0 (2026.5.16)"
     //   "hermes 0.14.0"
@@ -103,7 +119,7 @@ export async function GET() {
   }
 
   const resp: StatusResponse = {
-    installed: !!installedVersion,
+    installed: !!installedVersion || gatewayRunning,
     installedVersion,
     latestVersion,
     updateAvailable,
