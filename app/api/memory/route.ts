@@ -44,6 +44,7 @@ async function collect(root: string): Promise<MemFile[]> {
         continue;
       }
       if (!e.name.endsWith(".md")) continue;
+      if (e.name.toLowerCase() === "readme.md") continue; // housekeeping files, not knowledge
       try {
         const st = await fs.stat(full);
         const proj = kind === "brief" && !project ? e.name.replace(/\.md$/, "") : project;
