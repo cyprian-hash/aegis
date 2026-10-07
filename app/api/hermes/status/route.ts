@@ -22,20 +22,23 @@ interface StatusResponse {
 let cachedLatest: { version: string; fetchedAt: number } | null = null;
 const CACHE_MS = 60 * 60 * 1000;
 
-async function getInstalledVersion(): Promise<{ version: string | null; path: string | null }> {
+async function getInstalledVersion(): Promise<{ version: string | null; path: string | null; selfUpdate: boolean }> {
   try {
     const hermesPath = await findHermesPath();
-    if (!hermesPath) return { version: null, path: null };
+    if (!hermesPath) return { version: null, path: null, selfUpdate: false };
 
-    const { stdout } = await execAsync(`"${hermesPath}" --version 2>&1 | head -3`, { timeout: 5000 });
+    const { stdout } = await execAsync(`"${hermesPath}" --version 2>&1 | head -8`, { timeout: 8000 });
     // Output formats seen in the wild:
     //   "Hermes Agent v0.14.0 (2026.5.16)"
     //   "hermes 0.14.0"
     //   "v0.14.0"
     const match = stdout.match(/v?(\d+\.\d+\.\d+)/);
-    return { version: match ? match[1] : stdout.trim().split("\n")[0], path: hermesPath };
+    // The binary self-reports pending updates, e.g. "Update available: 1 commit behind — run 'hermes update'".
+    // Trust that over the GitHub release check (no rate limits, always accurate).
+    const selfUpdate = /update available/i.test(stdout);
+    return { version: match ? match[1] : stdout.trim().split("\n")[0], path: hermesPath, selfUpdate };
   } catch {
-    return { version: null, path: null };
+    return { version: null, path: null, selfUpdate: false };
   }
 }
 
@@ -94,11 +97,11 @@ function compareSemver(a: string, b: string): number {
 }
 
 export async function GET() {
-  const [{ version: installedVersion, path: hermesPath }, latestVersion, gatewayRunning] =
+  const [{ version: installedVersion, path: hermesPath, selfUpdate }, latestVersion, gatewayRunning] =
     await Promise.all([getInstalledVersion(), getLatestVersion(), isGatewayRunning()]);
 
-  let updateAvailable = false;
-  if (installedVersion && latestVersion) {
+  let updateAvailable = selfUpdate;
+  if (!updateAvailable && installedVersion && latestVersion) {
     const cleanInstalled = (installedVersion.match(/(\d+\.\d+\.\d+)/) || [])[1];
     if (cleanInstalled && compareSemver(latestVersion, cleanInstalled) > 0) {
       updateAvailable = true;

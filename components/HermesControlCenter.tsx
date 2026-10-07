@@ -169,7 +169,7 @@ export default function HermesControlCenter() {
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-black font-mono text-[11px] tracking-[0.18em] font-medium"
               style={{ boxShadow: "0 0 14px rgba(245,180,0,0.3)" }}>
               <Download className="h-3 w-3" strokeWidth={2.5} />
-              {updating ? "UPDATING…" : `UPDATE TO v${status.latestVersion}`}
+              {updating ? "UPDATING…" : status.latestVersion ? `UPDATE TO v${status.latestVersion}` : "UPDATE HERMES"}
             </motion.button>
           ) : (
             <div className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-300 font-mono text-[11px] tracking-[0.18em]">
