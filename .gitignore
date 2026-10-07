@@ -13,3 +13,4 @@ out
 .pre-vault-backup
 .pre-bootstrap-backup
 tsconfig.tsbuildinfo
+data/

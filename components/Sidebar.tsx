@@ -1,13 +1,14 @@
 "use client";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Gauge, Bot, MessageSquare, Activity, Network, Database, Wallet,
+  Gauge, Bot, MessageSquare, Activity, Network, Database, Wallet, Inbox,
   ScrollText, Compass, Plug, Briefcase,
 } from "lucide-react";
 
 export type ViewId =
   | "overview" | "agents" | "chat" | "projects" | "telemetry" | "network" | "memory"
-  | "logs" | "missions" | "mcp" | "ledger";
+  | "logs" | "missions" | "mcp" | "ledger" | "decisions";
 
 export const NAV: { id: ViewId; label: string; icon: any; group?: string }[] = [
   { id: "overview",  label: "Overview",   icon: Gauge },
@@ -15,6 +16,7 @@ export const NAV: { id: ViewId; label: string; icon: any; group?: string }[] = [
   { id: "chat",      label: "Chat",       icon: MessageSquare },
   { id: "projects", label: "Projects",  icon: Briefcase, group: "WORKSPACE" },
   { id: "missions",  label: "Missions",   icon: Compass,   group: "OPERATIONS" },
+  { id: "decisions", label: "Decisions",  icon: Inbox },
   { id: "logs",      label: "Logs",       icon: ScrollText },
   { id: "mcp",       label: "MCP",        icon: Plug },
   { id: "telemetry", label: "Telemetry",  icon: Activity,  group: "SYSTEM" },
@@ -24,6 +26,13 @@ export const NAV: { id: ViewId; label: string; icon: any; group?: string }[] = [
 ];
 
 export default function Sidebar({ active, setActive }: { active: ViewId; setActive: (v: ViewId) => void }) {
+  const [openDecisions, setOpenDecisions] = useState(0);
+  useEffect(() => {
+    const load = () => fetch("/api/decisions").then(r => r.json()).then(j => setOpenDecisions(j.openCount || 0)).catch(() => {});
+    load();
+    const id = setInterval(load, 45000);
+    return () => clearInterval(id);
+  }, []);
   return (
     <aside className="hidden md:flex w-[220px] flex-col border-r border-white/[0.06] bg-black/40 backdrop-blur-xl shrink-0">
       <div className="px-5 pt-6 pb-5 border-b border-white/[0.06]">
@@ -60,7 +69,12 @@ export default function Sidebar({ active, setActive }: { active: ViewId; setActi
                 }`}>
                   <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
                   <span className="text-[13px] font-medium">{n.label}</span>
-                  {isActive && (
+                  {n.id === "decisions" && openDecisions > 0 && (
+                    <span className="ml-auto min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-amber-400 text-black font-mono text-[10px] font-bold">
+                      {openDecisions}
+                    </span>
+                  )}
+                  {isActive && !(n.id === "decisions" && openDecisions > 0) && (
                     <motion.span layoutId="nav-dot"
                       className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-400"
                       style={{ boxShadow: "0 0 8px #f5b400" }} />

@@ -32,3 +32,8 @@ Why things are the way they are. One dated entry per architectural call; append,
 - **2026-10 · Claude's direct device access runs read-only git.** A sandboxed `git status` left
   a stale `index.lock` it couldn't delete and blocked local git; Claude edits files and verifies,
   the owner commits, restarts and pushes.
+- **2026-10 · Routines + Decisions are AEGIS-native, not a second platform.** After evaluating
+  Paperclip (meta-harness for agent orgs), we adopted its two best ideas — scheduled agent runs
+  and a human decisions inbox — on the existing chat API and vault instead of adding a new
+  platform: runs stay context-grounded and Ledger-tracked, and the owner remains "the board."
+  Routine output flags items via a `DECISION:` line convention parsed by the runner.

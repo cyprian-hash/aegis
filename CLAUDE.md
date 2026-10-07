@@ -28,6 +28,15 @@ MacBook and iPhone are clients over Tailscale. **GitHub (`cyprian-hash/aegis`) i
   READMEs are excluded. `app/api/ledger/route.ts` + `data/usage.jsonl` — API spend tracking
   (estimates at published prices; warnings only, never blocks).
 - `lib/chatstore.ts` — per-agent resumable threads at `AEGIS/Chats/<agent-id>/thread.json|md`.
+- **Routines** — scheduled agent runs. Definitions in vault `AEGIS/Routines/routines.json`;
+  `scripts/routines-runner.mjs` is fired every 5 min by the `com.aegis.routines` LaunchAgent
+  (installed by `scripts/install-routines-agent.sh`), calls the chat API (so runs are
+  context-grounded and Ledger-tracked), writes reports to `AEGIS/Routines/<name>/<date>.md`,
+  and files lines starting `DECISION:` into the Decisions inbox. State in `data/routines-state.json`.
+  Test one: `node scripts/routines-runner.mjs --force <id>` (or `--dry`).
+- **Decisions inbox** — `lib/decisionstore.ts` + `/api/decisions` + `components/DecisionsView.tsx`;
+  items live in vault `AEGIS/Decisions/<id>.md` (frontmatter status: open/resolved/dismissed).
+  Sidebar badge polls the open count.
 
 ## The Obsidian vault (agent memory)
 

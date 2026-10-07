@@ -12,6 +12,7 @@ import TelemetryView from "@/components/TelemetryView";
 import NetworkView from "@/components/NetworkView";
 import MemoryView from "@/components/MemoryView";
 import LedgerView from "@/components/LedgerView";
+import DecisionsView from "@/components/DecisionsView";
 import LogsView from "@/components/LogsView";
 import MissionsView from "@/components/MissionsView";
 import MCPView from "@/components/MCPView";
@@ -93,6 +94,7 @@ export default function Page() {
                     {active === "network"   && <NetworkView onSelect={handleProfile} />}
                     {active === "memory"    && <MemoryView />}
                     {active === "ledger"    && <LedgerView />}
+                    {active === "decisions" && <DecisionsView onOpenChat={(id) => { setChatAgentId(id); switchView("chat"); }} />}
                   </>
                 )}
               </motion.div>

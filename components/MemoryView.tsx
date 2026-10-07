@@ -44,8 +44,8 @@ export default function MemoryView() {
     fetch("/api/memory").then(r => r.json()).then(setData).catch(() => setData({ ok: false, error: "Failed to load" })).finally(() => setLoading(false));
   }, []);
 
-  const runSearch = useCallback(async () => {
-    const q = query.trim();
+  const runSearch = useCallback(async (qOverride?: string) => {
+    const q = (qOverride ?? query).trim();
     if (!q) { setResults(null); return; }
     setSearching(true);
     try {
@@ -62,7 +62,7 @@ export default function MemoryView() {
     <div>
       <SectionHeader kicker="SYSTEM / MEMORY" title="Memory & Knowledge" />
 
-      <MemoryConstellation />
+      <MemoryConstellation onSearch={(name) => { setQuery(name); runSearch(name); }} />
 
       {/* Real stats from the vault */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
@@ -161,7 +161,7 @@ export default function MemoryView() {
             placeholder="Keyword search across briefs, conversations, context…"
             className="flex-1 bg-transparent py-2.5 text-[13px] text-white placeholder-white/30 outline-none"
           />
-          <button onClick={runSearch} disabled={searching}
+          <button onClick={() => runSearch()} disabled={searching}
             className="px-4 py-1.5 rounded-full bg-amber-400 text-black text-[11px] tracking-[0.18em] font-mono font-medium hover:bg-amber-300 disabled:opacity-50 flex items-center gap-1.5">
             {searching ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
             SEARCH
