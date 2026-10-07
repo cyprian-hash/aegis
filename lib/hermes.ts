@@ -29,3 +29,18 @@ export function augmentedPath(): string {
   const cur = (process.env.PATH || "").split(":");
   return Array.from(new Set([...cur, ...extra])).filter(Boolean).join(":");
 }
+
+/** Health-check the Hermes gateway (same logic as the status card). */
+export async function gatewayUp(): Promise<boolean> {
+  const baseUrl = process.env.HERMES_BASE_URL || "http://localhost:8642/v1";
+  try {
+    const healthUrl = baseUrl.replace(/\/v1\/?$/, "/v1/health");
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 1500);
+    const res = await fetch(healthUrl, { signal: ctrl.signal });
+    clearTimeout(t);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
