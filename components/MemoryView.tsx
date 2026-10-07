@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Database, FileText, Layers, Search, MessageSquare, BookOpen, FileStack, Loader2 } from "lucide-react";
 import StatTile from "./StatTile";
 import SectionHeader from "./SectionHeader";
+import MemoryConstellation from "./MemoryConstellation";
 import { COLOR_MAP } from "@/lib/theme";
 
 interface Recent { name: string; kind: string; project?: string; updated: string; size: number; }
@@ -60,6 +61,8 @@ export default function MemoryView() {
   return (
     <div>
       <SectionHeader kicker="SYSTEM / MEMORY" title="Memory & Knowledge" />
+
+      <MemoryConstellation />
 
       {/* Real stats from the vault */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">

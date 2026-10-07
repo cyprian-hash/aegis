@@ -29,6 +29,7 @@ export default function ProjectsView({ projects, activeId, onActivate, onRefresh
   const [selected, setSelected] = useState<Project | null>(null);
   const [discovering, setDiscovering] = useState(false);
   const [discoveryReport, setDiscoveryReport] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "live" | "building" | "idea" | "ios">("all");
   const [showNew, setShowNew] = useState(false);
 
   const runDiscovery = async () => {
@@ -52,10 +53,17 @@ export default function ProjectsView({ projects, activeId, onActivate, onRefresh
     }
   };
 
+  // Stat-tile filter: which projects are visible
+  const visible = useMemo(() => {
+    if (filter === "all") return projects;
+    if (filter === "ios") return projects.filter(p => p.ios);
+    return projects.filter(p => p.status === filter);
+  }, [projects, filter]);
+
   // Group projects by status, with the umbrella (prive-systems) pinned first within live
   const grouped = useMemo(() => {
     const g: Record<ProjectStatus, Project[]> = { live: [], building: [], idea: [], archived: [] };
-    for (const p of projects) (g[p.status] ||= []).push(p);
+    for (const p of visible) (g[p.status] ||= []).push(p);
     // pin umbrella to front of its group
     for (const s of STATUS_ORDER) {
       g[s].sort((a, b) => {
@@ -65,7 +73,7 @@ export default function ProjectsView({ projects, activeId, onActivate, onRefresh
       });
     }
     return g;
-  }, [projects]);
+  }, [visible]);
 
   const stats = useMemo(() => {
     const live = projects.filter(p => p.status === "live").length;
@@ -108,11 +116,16 @@ export default function ProjectsView({ projects, activeId, onActivate, onRefresh
 
       {/* Portfolio stat strip */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
-        <StatTile label="TOTAL" value={stats.total} hint="projects" />
-        <StatTile label="LIVE" value={stats.live} color="#34d399" />
-        <StatTile label="BUILDING" value={stats.building} color="#f5b400" />
-        <StatTile label="CONCEPT" value={stats.idea} color="#94a3b8" />
-        <StatTile label="iOS APPS" value={stats.ios} color="#7dd3fc" />
+        <StatTile label="TOTAL" value={stats.total} hint="projects"
+          active={filter === "all"} onClick={() => setFilter("all")} />
+        <StatTile label="LIVE" value={stats.live} color="#34d399"
+          active={filter === "live"} onClick={() => setFilter(f => f === "live" ? "all" : "live")} />
+        <StatTile label="BUILDING" value={stats.building} color="#f5b400"
+          active={filter === "building"} onClick={() => setFilter(f => f === "building" ? "all" : "building")} />
+        <StatTile label="CONCEPT" value={stats.idea} color="#94a3b8"
+          active={filter === "idea"} onClick={() => setFilter(f => f === "idea" ? "all" : "idea")} />
+        <StatTile label="iOS APPS" value={stats.ios} color="#7dd3fc"
+          active={filter === "ios"} onClick={() => setFilter(f => f === "ios" ? "all" : "ios")} />
       </div>
 
       {discoveryReport && (
@@ -166,16 +179,24 @@ export default function ProjectsView({ projects, activeId, onActivate, onRefresh
   );
 }
 
-function StatTile({ label, value, hint, color }: { label: string; value: number; hint?: string; color?: string }) {
+function StatTile({ label, value, hint, color, active, onClick }: {
+  label: string; value: number; hint?: string; color?: string; active?: boolean; onClick?: () => void;
+}) {
+  const accent = color || "#f5b400";
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3">
-      <div className="font-mono text-[9px] tracking-[0.24em] text-white/40 mb-1">{label}</div>
+    <button onClick={onClick}
+      className={`rounded-xl border px-4 py-3 text-left transition-colors ${active
+        ? "bg-white/[0.05]"
+        : "border-white/[0.06] bg-white/[0.015] hover:border-white/20 hover:bg-white/[0.03]"}`}
+      style={active ? { borderColor: accent + "99", boxShadow: `0 0 12px ${accent}22` } : undefined}
+      title={active ? "Showing this group — click to show all" : `Show only ${label.toLowerCase()}`}>
+      <div className={`font-mono text-[9px] tracking-[0.24em] mb-1 ${active ? "text-white/75" : "text-white/40"}`}>{label}</div>
       <div className="flex items-baseline gap-1.5">
         <span className="font-display text-[26px] leading-none tabular-nums"
           style={{ color: color || "#ffffff" }}>{value}</span>
         {hint && <span className="text-[10px] text-white/35">{hint}</span>}
       </div>
-    </div>
+    </button>
   );
 }
 

@@ -12,3 +12,4 @@ out
 .pre-voice-backup
 .pre-vault-backup
 .pre-bootstrap-backup
+tsconfig.tsbuildinfo

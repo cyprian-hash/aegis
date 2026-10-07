@@ -77,6 +77,14 @@ export async function GET(req: Request) {
   try { files = await collect(root); }
   catch (e: any) { return Response.json({ ok: false, error: String(e?.message || e) }, { status: 500 }); }
 
+  // List mode: full file inventory for the constellation.
+  if (url.searchParams.get("list")) {
+    return Response.json({
+      ok: true, mode: "list",
+      files: files.map(f => ({ name: f.name, kind: f.kind, project: f.project, size: f.size, updated: f.updated })),
+    });
+  }
+
   // Search mode: scan file contents for the query, return matches + snippet.
   if (q) {
     const results: any[] = [];
