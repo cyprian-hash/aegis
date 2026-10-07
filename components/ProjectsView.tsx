@@ -6,6 +6,7 @@ import {
   Search, FolderOpen, Mail, Layers,
 } from "lucide-react";
 import { Project, colorTokens, STATUS_COLOR, ProjectStatus, slugify } from "@/lib/projects";
+import GithubImportModal from "@/components/GithubImportModal";
 
 interface Props {
   projects: Project[];
@@ -31,6 +32,7 @@ export default function ProjectsView({ projects, activeId, onActivate, onRefresh
   const [discoveryReport, setDiscoveryReport] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "live" | "building" | "idea" | "ios">("all");
   const [showNew, setShowNew] = useState(false);
+  const [showGithub, setShowGithub] = useState(false);
 
   const runDiscovery = async () => {
     if (discovering) return;
@@ -107,6 +109,10 @@ export default function ProjectsView({ projects, activeId, onActivate, onRefresh
             <Search className="h-3 w-3" strokeWidth={2} />
             {discovering ? "SCANNING…" : "DISCOVER PATHS"}
           </button>
+          <button onClick={() => setShowGithub(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.08] hover:border-white/25 hover:bg-white/[0.04] font-mono text-[11px] tracking-[0.18em] text-white/70 hover:text-white transition-colors">
+            <Github className="h-3 w-3" strokeWidth={2} /> FROM GITHUB
+          </button>
           <button onClick={() => setShowNew(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-full border border-amber-400/30 bg-amber-400/[0.06] hover:bg-amber-400/[0.12] hover:border-amber-400/60 font-mono text-[11px] tracking-[0.18em] text-amber-300 transition-colors">
             <Plus className="h-3 w-3" strokeWidth={2} /> NEW PROJECT
@@ -163,6 +169,13 @@ export default function ProjectsView({ projects, activeId, onActivate, onRefresh
       })}
 
       <AnimatePresence>
+        {showGithub && (
+          <GithubImportModal
+            projects={projects}
+            onClose={() => setShowGithub(false)}
+            onImported={() => onRefresh()}
+          />
+        )}
         {showNew && (
           <NewProjectModal
             existingIds={projects.map(p => p.id)}
