@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { X, Pause, Play, RotateCcw, Search } from "lucide-react";
+import { X, Pause, Play, RotateCcw, Search, Maximize2, Minimize2 } from "lucide-react";
 import { getAgent } from "@/lib/agents";
 
 interface MemFile { name: string; kind: string; project?: string; size: number; updated: string; }
@@ -253,13 +253,26 @@ export default function MemoryConstellation({ onSearch }: { onSearch?: (q: strin
     };
   }, []);
 
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [fs, setFs] = useState(false);
+  useEffect(() => {
+    const onFs = () => setFs(document.fullscreenElement === rootRef.current);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+  const toggleFs = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else rootRef.current?.requestFullscreen().catch(() => {});
+  };
+
   const togglePause = () => { ctrlRef.current.auto = !ctrlRef.current.auto; ctrlRef.current.resumeAt = 0; setPaused(!ctrlRef.current.auto); };
   const resetView = () => { const C = ctrlRef.current; C.rotY = 0.6; C.rotX = -0.22; C.zoom = 1.15; C.resumeAt = 0; };
   const selAgent = selected?.kind === "conversation" && selected.project ? getAgent(selected.project) : null;
 
   return (
-    <div className="relative rounded-2xl border border-white/[0.08] overflow-hidden mb-6"
-      style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.25))" }}>
+    <div ref={rootRef}
+      className={`relative border border-white/[0.08] overflow-hidden ${fs ? "flex flex-col rounded-none mb-0 bg-black" : "rounded-2xl mb-6"}`}
+      style={fs ? undefined : { background: "linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.25))" }}>
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 pt-4 pointer-events-none">
         <div className="flex items-center gap-2.5">
           <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" style={{ boxShadow: "0 0 8px #f5b400" }} />
@@ -269,6 +282,10 @@ export default function MemoryConstellation({ onSearch }: { onSearch?: (q: strin
           </span>
         </div>
         <div className="flex items-center gap-1.5 pointer-events-auto">
+          <button onClick={toggleFs} title={fs ? "Exit full screen" : "Full screen"}
+            className="h-7 w-7 grid place-items-center rounded-full border border-white/10 bg-black/40 hover:bg-white/10 text-white/50 hover:text-white">
+            {fs ? <Minimize2 className="h-3 w-3" strokeWidth={2} /> : <Maximize2 className="h-3 w-3" strokeWidth={2} />}
+          </button>
           <button onClick={togglePause} title={paused ? "Resume rotation" : "Pause rotation"}
             className="h-7 w-7 grid place-items-center rounded-full border border-white/10 bg-black/40 hover:bg-white/10 text-white/50 hover:text-white">
             {paused ? <Play className="h-3 w-3" strokeWidth={2} /> : <Pause className="h-3 w-3" strokeWidth={2} />}
@@ -280,7 +297,7 @@ export default function MemoryConstellation({ onSearch }: { onSearch?: (q: strin
         </div>
       </div>
 
-      <div ref={wrapRef} className="h-[460px] md:h-[560px] w-full"
+      <div ref={wrapRef} className={fs ? "flex-1 min-h-0 w-full" : "h-[520px] md:h-[640px] w-full"}
         style={{ background: "radial-gradient(ellipse at 50% 45%, rgba(245,180,0,0.05), transparent 60%)" }}>
         <canvas ref={canvasRef} className="touch-none" />
       </div>
