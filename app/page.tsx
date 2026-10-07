@@ -3,6 +3,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AmbientGrid from "@/components/AmbientGrid";
 import StatusBar from "@/components/StatusBar";
+import MobileNav from "@/components/MobileNav";
 import Sidebar, { ViewId } from "@/components/Sidebar";
 import OverviewView from "@/components/OverviewView";
 import AgentsView from "@/components/AgentsView";
@@ -46,6 +47,7 @@ export default function Page() {
       <AmbientGrid />
       <div className="relative z-10 flex min-h-screen">
         <Sidebar active={active} setActive={switchView} />
+        <MobileNav active={active} setActive={switchView} />
         <div className="flex-1 flex flex-col min-w-0">
           <StatusBar
             projects={projects}
@@ -53,7 +55,7 @@ export default function Page() {
             onChangeProject={setActiveId}
             onOpenProjects={() => switchView("projects")}
           />
-          <main className="flex-1 px-6 md:px-10 py-8 max-w-[1600px] w-full mx-auto">
+          <main className="flex-1 px-4 md:px-10 py-6 md:py-8 pb-28 md:pb-8 max-w-[1600px] w-full mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={profileAgent?.id || active}
