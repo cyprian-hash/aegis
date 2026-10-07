@@ -1,5 +1,6 @@
 import { exec } from "child_process";
 import { promisify } from "util";
+import { findHermesPath } from "@/lib/hermes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,24 +24,7 @@ const CACHE_MS = 60 * 60 * 1000;
 
 async function getInstalledVersion(): Promise<{ version: string | null; path: string | null }> {
   try {
-    // `which` can fail under LaunchAgent (minimal PATH), so also try common paths.
-    let hermesPath: string | null = null;
-    try {
-      const { stdout: pathOut } = await execAsync("which hermes", { timeout: 3000 });
-      hermesPath = pathOut.trim() || null;
-    } catch {}
-    if (!hermesPath) {
-      const home = process.env.HOME || "";
-      const candidates = [
-        `${home}/.local/bin/hermes`,
-        "/opt/homebrew/bin/hermes",
-        "/usr/local/bin/hermes",
-        `${home}/.hermes/bin/hermes`,
-      ];
-      for (const c of candidates) {
-        try { await execAsync(`test -x "${c}"`, { timeout: 1500 }); hermesPath = c; break; } catch {}
-      }
-    }
+    const hermesPath = await findHermesPath();
     if (!hermesPath) return { version: null, path: null };
 
     const { stdout } = await execAsync(`"${hermesPath}" --version 2>&1 | head -3`, { timeout: 5000 });
@@ -60,12 +44,15 @@ async function getLatestVersion(): Promise<string | null> {
     return cachedLatest.version;
   }
   try {
+    const headers: Record<string, string> = { "User-Agent": "aegis-control-center" };
+    if (process.env.GITHUB_TOKEN) headers["Authorization"] = `Bearer ${process.env.GITHUB_TOKEN}`;
     const res = await fetch("https://api.github.com/repos/NousResearch/hermes-agent/releases/latest", {
-      headers: { "User-Agent": "aegis-control-center" },
+      headers,
       // Don't cache on the fetch layer; we manage our own cache.
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    // On rate-limit/failure, serve the last known version (stale beats flapping to "up to date").
+    if (!res.ok) return cachedLatest?.version ?? null;
     const data = await res.json();
     const tag: string = data.tag_name || "";
     // Tags look like "v2026.5.16" or "v0.14.0"; the release body has the semver.
@@ -76,7 +63,7 @@ async function getLatestVersion(): Promise<string | null> {
     cachedLatest = { version, fetchedAt: Date.now() };
     return version;
   } catch {
-    return null;
+    return cachedLatest?.version ?? null;
   }
 }
 

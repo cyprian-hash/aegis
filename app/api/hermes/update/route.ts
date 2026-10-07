@@ -1,4 +1,5 @@
 import { spawn } from "child_process";
+import { findHermesPath, augmentedPath } from "@/lib/hermes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,9 +13,19 @@ export async function POST() {
         controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
       };
 
-      send("start", { msg: "Running hermes update…" });
+      const hermesPath = await findHermesPath();
+      if (!hermesPath) {
+        send("error", { message: "hermes binary not found (checked PATH, ~/.local/bin, /opt/homebrew/bin, /usr/local/bin, ~/.hermes/bin)" });
+        controller.close();
+        return;
+      }
 
-      const proc = spawn("hermes", ["update"], { shell: false });
+      send("start", { msg: `Running ${hermesPath} update…` });
+
+      const proc = spawn(hermesPath, ["update"], {
+        shell: false,
+        env: { ...process.env, PATH: augmentedPath() },
+      });
       proc.stdout.on("data", (chunk) => {
         send("log", { line: chunk.toString() });
       });
