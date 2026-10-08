@@ -297,6 +297,34 @@ New documents:${corpus}`;
     `---\nroutine: ${r.id}\nranAt: '${now.toISOString()}'\n---\n\n# Source Sync — ${day}\n\n${reportLines.join("\n\n")}\n`, "utf8");
 }
 
+async function runLeadsWatch(r, now) {
+  const statePath = path.join(repo, "data", "leads-state.json");
+  let st = { seen: [] };
+  try { st = JSON.parse(await fs.readFile(statePath, "utf8")); } catch {}
+  const seen = new Set(st.seen || []);
+  const baseline = seen.size === 0;
+  const j = await (await fetch(`${BASE}/api/crm`)).json();
+  if (!j.ok) throw new Error(j.error || "crm api failed");
+  let filed = 0;
+  for (const l of j.leads || []) {
+    const key = `${l.projectId}:${l.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (baseline || l.status !== "new" || filed >= 5) continue;
+    await fileDecision(
+      `New lead: ${l.name} — ${l.projectId}`,
+      `${l.name} <${l.email}>${l.phone ? " · " + l.phone : ""}\n\n${(l.message || "").slice(0, 600)}\n\nFrom the ${l.projectId} CRM — open the Leads view in AEGIS to respond.`,
+      "leads-watch", "claude-prime"
+    );
+    filed++;
+  }
+  st.seen = Array.from(seen).slice(-1000);
+  await fs.mkdir(path.dirname(statePath), { recursive: true });
+  await fs.writeFile(statePath, JSON.stringify(st), "utf8");
+  if (baseline) log(`  leads-watch: baseline recorded (${seen.size} existing rows, no decisions)`);
+  else if (filed) log(`  leads-watch: ${filed} new lead decision(s) filed`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const dry = args.includes("--dry");
@@ -315,7 +343,7 @@ async function main() {
   try { state = JSON.parse(await fs.readFile(statePath, "utf8")); } catch {}
 
   const now = new Date();
-  const toRun = routines.filter(r => r.enabled !== false && (forceId ? r.id === forceId : dueNow(r, state[r.id], now)));
+  const toRun = routines.filter(r => r.enabled !== false && (forceId ? r.id === forceId : (r.kind === "leads-watch" ? true : dueNow(r, state[r.id], now))));
   log(`routines: ${routines.length} defined, ${toRun.length} due${forceId ? ` (forced: ${forceId})` : ""}`);
   if (dry) { toRun.forEach(r => log("  would run:", r.id)); return; }
 
@@ -333,6 +361,10 @@ async function main() {
       }
       if (r.kind === "source-sync") {
         await runSourceSync(r, vault, now);
+        continue;
+      }
+      if (r.kind === "leads-watch") {
+        await runLeadsWatch(r, now);
         continue;
       }
       let prompt = r.prompt;

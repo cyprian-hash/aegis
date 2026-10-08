@@ -3,12 +3,12 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Gauge, Bot, MessageSquare, Activity, Network, Database, Wallet, Inbox,
-  ScrollText, Compass, Plug, Briefcase,
+  ScrollText, Compass, Plug, Briefcase, ContactRound,
 } from "lucide-react";
 
 export type ViewId =
   | "overview" | "agents" | "chat" | "projects" | "telemetry" | "network" | "memory"
-  | "logs" | "missions" | "mcp" | "ledger" | "decisions";
+  | "logs" | "missions" | "mcp" | "ledger" | "decisions" | "leads";
 
 export const NAV: { id: ViewId; label: string; icon: any; group?: string }[] = [
   { id: "overview",  label: "Overview",   icon: Gauge },
@@ -16,6 +16,7 @@ export const NAV: { id: ViewId; label: string; icon: any; group?: string }[] = [
   { id: "chat",      label: "Chat",       icon: MessageSquare },
   { id: "projects", label: "Projects",  icon: Briefcase, group: "WORKSPACE" },
   { id: "missions",  label: "Missions",   icon: Compass,   group: "OPERATIONS" },
+  { id: "leads",     label: "Leads",      icon: ContactRound },
   { id: "decisions", label: "Decisions",  icon: Inbox },
   { id: "logs",      label: "Logs",       icon: ScrollText },
   { id: "mcp",       label: "MCP",        icon: Plug },

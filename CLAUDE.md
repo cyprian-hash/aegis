@@ -71,3 +71,8 @@ Path from `OBSIDIAN_VAULT` in `.env.local` (iCloud-synced:
 ## Source docs sync
 - Routine kind `source-sync` (weekly Mon 07:30): per-project folder map lives in the routine's `sources` in vault routines.json. Incremental by mtime — unchanged files cost zero tokens; ≤10 changed files per run, local extraction (textutil for docx/rtf, pdftotext for PDFs if installed, plain read for md/txt/csv; xlsx unsupported), distilled by claude-prime into dated bullets under `## Source Notes` in the project brief. State: data/source-sync-state.json. Reports: vault AEGIS/Routines/source-sync/.
 - Test: `node scripts/routines-runner.mjs --force source-sync`.
+
+## Per-project CRM (Leads)
+- Each business keeps leads in its own Supabase project: dubova-villas `enquiries`, jetpedia `aircraft_inquiries` (both have status + internal_notes pipeline columns). Config in lib/crm.ts; per-project SERVICE ROLE keys in .env.local (CRM_DUBOVA_KEY, CRM_JETPEDIA_KEY) — never commit or echo.
+- /api/crm GET lists normalized leads across sources, PATCH updates status/notes. LeadsView = Leads nav entry.
+- Runner kind `leads-watch` runs every launchd pass: diffs lead ids vs data/leads-state.json, files a Decision per new lead (first run records baseline silently).

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AmbientGrid from "@/components/AmbientGrid";
 import StatusBar from "@/components/StatusBar";
+import LeadsView from "@/components/LeadsView";
 import MobileNav from "@/components/MobileNav";
 import Sidebar, { ViewId } from "@/components/Sidebar";
 import OverviewView from "@/components/OverviewView";
@@ -97,6 +98,7 @@ export default function Page() {
                     {active === "memory"    && <MemoryView />}
                     {active === "ledger"    && <LedgerView />}
                     {active === "decisions" && <DecisionsView onOpenChat={(id) => { setChatAgentId(id); switchView("chat"); }} />}
+                    {active === "leads" && <LeadsView projects={projects} />}
                   </>
                 )}
               </motion.div>
