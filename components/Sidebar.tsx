@@ -59,8 +59,9 @@ export default function Sidebar({ active, setActive }: { active: ViewId; setActi
           return (
             <div key={n.id}>
               {n.group && (
-                <div className="mt-5 mb-1.5 px-3 font-mono text-[8px] tracking-[0.3em] text-white/25">
-                  {n.group}
+                <div className="mt-5 mb-1.5 px-3 flex items-center gap-2">
+                  <span className="h-px w-3 bg-gradient-to-r from-amber-400/70 to-transparent" />
+                  <span className="font-mono text-[9px] tracking-[0.3em] text-white/60">{n.group}</span>
                 </div>
               )}
               <button onClick={() => setActive(n.id)} className="group relative w-full text-left">
@@ -87,7 +88,10 @@ export default function Sidebar({ active, setActive }: { active: ViewId; setActi
       </nav>
 
       <div className="border-t border-white/[0.06] p-4">
-        <div className="font-mono text-[9px] tracking-[0.3em] text-white/30 mb-2.5">OPERATOR</div>
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className="h-px w-3 bg-gradient-to-r from-amber-400/70 to-transparent" />
+          <span className="font-mono text-[9px] tracking-[0.3em] text-white/60">OPERATOR</span>
+        </div>
         <div className="flex items-center gap-2.5">
           <div className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 grid place-items-center text-black text-[12px] font-bold">
             C

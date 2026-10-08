@@ -77,6 +77,226 @@ async function fileDecision(title, body, source, agentId) {
   } catch (e) { log("  decision FAILED:", e.message); }
 }
 
+async function listProjects(vault) {
+  const dir = path.join(vault, "AEGIS", "Projects");
+  const out = [];
+  for (const f of await fs.readdir(dir)) {
+    if (!f.endsWith(".md") || f.toLowerCase() === "readme.md") continue;
+    try {
+      const raw = await fs.readFile(path.join(dir, f), "utf8");
+      const name = (raw.match(/^name:\s*(.+)$/m) || [])[1] || f.replace(/\.md$/, "");
+      out.push({ id: f.replace(/\.md$/, ""), name: name.trim() });
+    } catch {}
+  }
+  return out;
+}
+
+async function runDistill(r, vault, now, prevRunISO) {
+  const lookbackIdx = process.argv.indexOf("--lookback");
+  const lookbackHours = lookbackIdx > -1 ? Number(process.argv[lookbackIdx + 1]) : (r.lookbackHours || 24);
+  const cutoff = prevRunISO ? new Date(prevRunISO) : new Date(now.getTime() - lookbackHours * 3600_000);
+  const chatsDir = path.join(vault, "AEGIS", "Chats");
+  const picked = [];
+  for (const f of await fs.readdir(chatsDir)) {
+    if (!f.endsWith(".md")) continue;
+    const full = path.join(chatsDir, f);
+    const st = await fs.stat(full);
+    if (st.mtime > cutoff) picked.push({ f, full, mtime: st.mtime });
+  }
+  picked.sort((a, b) => b.mtime - a.mtime);
+  const batch = picked.slice(0, 15);
+  const day = now.toISOString().slice(0, 10);
+  const reportDir = path.join(vault, "AEGIS", "Routines", "memory-distill");
+  await fs.mkdir(reportDir, { recursive: true });
+
+  if (batch.length === 0) {
+    await fs.writeFile(path.join(reportDir, `${day}.md`),
+      `---\nroutine: ${r.id}\nranAt: '${now.toISOString()}'\n---\n\n# Memory Distiller — ${day}\n\nNo chats changed since ${cutoff.toISOString()}. Nothing to distill.\n`, "utf8");
+    log("  distill: no recent chats");
+    return;
+  }
+
+  let corpus = "";
+  for (const c of batch) {
+    let raw = await fs.readFile(c.full, "utf8");
+    if (raw.length > 6000) raw = raw.slice(0, 6000) + "\n…(truncated)";
+    corpus += `\n\n===== CHAT FILE: ${c.f} =====\n${raw}`;
+    if (corpus.length > 24000) break;
+  }
+
+  const projects = await listProjects(vault);
+  const projList = projects.map(p => `- ${p.id}: ${p.name}`).join("\n");
+  const prompt = `You are the memory distiller for AEGIS. Below are recent conversation transcripts between the Commander and agents. Extract ONLY durable facts worth remembering long-term: decisions made, named people and their roles, deadlines, agreed plans, constraints, preferences, business facts. Skip pleasantries, one-off text edits, and anything transient.
+
+Known projects:
+${projList}
+
+Output format — one line per fact, nothing else:
+FACT [project-id]: <one-sentence fact>
+
+Use the exact project-id from the list. If a fact clearly belongs to no listed project, omit it. If there are no durable facts, output exactly: NO FACTS
+
+Transcripts:${corpus}`;
+
+  const text = await callAgent(r.agentId, prompt, null);
+  const facts = text.split("\n")
+    .map(l => l.trim())
+    .map(l => l.match(/^FACT\s*\[([a-z0-9-]+)\]:\s*(.+)$/i))
+    .filter(Boolean)
+    .map(m => ({ id: m[1].toLowerCase(), fact: m[2].trim() }));
+
+  const validIds = new Set(projects.map(p => p.id));
+  const written = [], skipped = [];
+  for (const { id, fact } of facts) {
+    if (!validIds.has(id)) { skipped.push(`${id}: ${fact} (unknown project)`); continue; }
+    const briefPath = path.join(vault, "AEGIS", "Projects", `${id}.md`);
+    let brief = await fs.readFile(briefPath, "utf8");
+    if (brief.includes(fact)) { skipped.push(`${id}: ${fact} (already recorded)`); continue; }
+    const line = `- ${day}: ${fact}`;
+    if (brief.includes("\n## Learned")) {
+      brief = brief.replace(/\n## Learned\s*\n/, `\n## Learned\n\n${line}\n`);
+    } else {
+      brief = brief.trimEnd() + `\n\n## Learned\n\n${line}\n`;
+    }
+    await fs.writeFile(briefPath, brief, "utf8");
+    written.push(`${id}: ${fact}`);
+  }
+
+  const report = `---\nroutine: ${r.id}\nagent: ${r.agentId}\nranAt: '${now.toISOString()}'\n---\n\n# Memory Distiller — ${day}\n\nChats read (${batch.length}): ${batch.map(c => c.f).join(", ")}\n\n## Facts written (${written.length})\n${written.map(w => "- " + w).join("\n") || "_none_"}\n\n## Skipped (${skipped.length})\n${skipped.map(w => "- " + w).join("\n") || "_none_"}\n\n## Raw model output\n\n\u0060\u0060\u0060\n${text.slice(0, 3000)}\n\u0060\u0060\u0060\n`;
+  await fs.writeFile(path.join(reportDir, `${day}.md`), report, "utf8");
+  log(`  distill: ${batch.length} chats → ${written.length} facts written, ${skipped.length} skipped`);
+}
+
+const TEXT_EXT = new Set([".md", ".txt", ".csv", ".json"]);
+const CONVERT_EXT = new Set([".docx", ".doc", ".rtf", ".rtfd", ".html"]);
+
+async function extractText(full, ext) {
+  const { execFile } = await import("child_process");
+  const { promisify } = await import("util");
+  const run = promisify(execFile);
+  try {
+    if (TEXT_EXT.has(ext)) return await fs.readFile(full, "utf8");
+    if (CONVERT_EXT.has(ext)) {
+      const { stdout } = await run("textutil", ["-convert", "txt", "-stdout", full], { timeout: 30000, maxBuffer: 10_000_000 });
+      return stdout;
+    }
+    if (ext === ".pdf") {
+      try {
+        const { stdout } = await run("pdftotext", [full, "-"], { timeout: 30000, maxBuffer: 10_000_000 });
+        return stdout;
+      } catch { return null; } // pdftotext not installed or scanned pdf
+    }
+  } catch {}
+  return null;
+}
+
+async function walkFiles(dir, depth = 0, out = []) {
+  if (depth > 4) return out;
+  let entries = [];
+  try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return out; }
+  for (const e of entries) {
+    if (e.name.startsWith(".")) continue;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) await walkFiles(full, depth + 1, out);
+    else out.push(full);
+  }
+  return out;
+}
+
+async function runSourceSync(r, vault, now) {
+  const statePath = path.join(repo, "data", "source-sync-state.json");
+  let st = {};
+  try { st = JSON.parse(await fs.readFile(statePath, "utf8")); } catch {}
+  const day = now.toISOString().slice(0, 10);
+  const reportDir = path.join(vault, "AEGIS", "Routines", "source-sync");
+  await fs.mkdir(reportDir, { recursive: true });
+  const reportLines = [];
+
+  for (const [projectId, srcDir] of Object.entries(r.sources || {})) {
+    const briefPath = path.join(vault, "AEGIS", "Projects", `${projectId}.md`);
+    try { await fs.access(briefPath); } catch { reportLines.push(`## ${projectId}\n\n_brief not found; skipped_`); continue; }
+    st[projectId] = st[projectId] || {};
+    const files = await walkFiles(srcDir);
+    const changed = [], skippedFiles = [];
+    for (const full of files) {
+      const ext = path.extname(full).toLowerCase();
+      let stat;
+      try { stat = await fs.stat(full); } catch { continue; }
+      if (stat.size > 15_000_000) { skippedFiles.push(`${path.basename(full)} (too large)`); continue; }
+      const rel = path.relative(srcDir, full);
+      if (st[projectId][rel] === stat.mtimeMs) continue; // unchanged — costs nothing
+      if (!TEXT_EXT.has(ext) && !CONVERT_EXT.has(ext) && ext !== ".pdf") {
+        st[projectId][rel] = stat.mtimeMs; // mark so we don't re-report it forever
+        skippedFiles.push(`${rel} (unsupported type ${ext})`);
+        continue;
+      }
+      changed.push({ full, rel, ext, mtimeMs: stat.mtimeMs });
+      if (changed.length >= 10) break; // per-run cap; rest picked up next run
+    }
+
+    if (changed.length === 0) {
+      reportLines.push(`## ${projectId}\n\nNo new or changed documents.${skippedFiles.length ? ` Skipped: ${skippedFiles.join(", ")}` : ""}`);
+      continue;
+    }
+
+    let corpus = "", extracted = [], failed = [];
+    for (const c of changed) {
+      const text = await extractText(c.full, c.ext);
+      if (!text || !text.trim()) { failed.push(c.rel); st[projectId][c.rel] = c.mtimeMs; continue; }
+      let t = text.trim();
+      if (t.length > 8000) t = t.slice(0, 8000) + "\n…(truncated)";
+      corpus += `\n\n===== DOCUMENT: ${c.rel} =====\n${t}`;
+      extracted.push(c);
+      if (corpus.length > 20000) break;
+    }
+
+    if (!corpus) {
+      reportLines.push(`## ${projectId}\n\n${changed.length} changed file(s) but none extractable: ${failed.join(", ")}`);
+      await fs.writeFile(statePath, JSON.stringify(st, null, 2), "utf8");
+      continue;
+    }
+
+    let brief = await fs.readFile(briefPath, "utf8");
+    const briefBody = brief.split("## Notes").slice(1).join("## Notes").slice(0, 4000);
+    const prompt = `You are the source-document distiller for the AEGIS project "${projectId}". Below are new or updated documents from the project's source folder, plus the current project brief. Extract durable business facts NOT already in the brief: numbers, terms, deadlines, named parties, commitments, plans. Max 10 bullets, each one tight sentence.
+
+Output format — one line per fact, nothing else:
+NOTE: <fact>
+
+If the documents add nothing new, output exactly: NO NOTES
+
+Current brief (excerpt):
+${briefBody}
+
+New documents:${corpus}`;
+
+    try {
+      const text = await callAgent(r.agentId, prompt, projectId);
+      const notes = text.split("\n").map(l => l.trim()).filter(l => l.startsWith("NOTE:")).map(l => l.replace(/^NOTE:\s*/, "").trim()).slice(0, 10);
+      const fresh = notes.filter(n => !brief.includes(n));
+      if (fresh.length) {
+        const lines = fresh.map(n => `- ${day}: ${n}`).join("\n");
+        if (brief.includes("\n## Source Notes")) {
+          brief = brief.replace(/\n## Source Notes\s*\n/, `\n## Source Notes\n\n${lines}\n`);
+        } else {
+          brief = brief.trimEnd() + `\n\n## Source Notes\n\n${lines}\n`;
+        }
+        await fs.writeFile(briefPath, brief, "utf8");
+      }
+      for (const c of extracted) st[projectId][c.rel] = c.mtimeMs;
+      reportLines.push(`## ${projectId}\n\nRead: ${extracted.map(c => c.rel).join(", ")}\nNotes written: ${fresh.length}\n${fresh.map(n => "- " + n).join("\n")}${failed.length ? `\nFailed to extract: ${failed.join(", ")}` : ""}${skippedFiles.length ? `\nSkipped: ${skippedFiles.join(", ")}` : ""}`);
+      log(`  source-sync ${projectId}: ${extracted.length} docs → ${fresh.length} notes`);
+    } catch (e) {
+      reportLines.push(`## ${projectId}\n\nDistill call FAILED: ${e.message} (files will retry next run)`);
+      log(`  source-sync ${projectId} FAILED: ${e.message}`);
+    }
+  }
+
+  await fs.writeFile(statePath, JSON.stringify(st, null, 2), "utf8");
+  await fs.writeFile(path.join(reportDir, `${day}.md`),
+    `---\nroutine: ${r.id}\nranAt: '${now.toISOString()}'\n---\n\n# Source Sync — ${day}\n\n${reportLines.join("\n\n")}\n`, "utf8");
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const dry = args.includes("--dry");
@@ -99,6 +319,7 @@ async function main() {
   log(`routines: ${routines.length} defined, ${toRun.length} due${forceId ? ` (forced: ${forceId})` : ""}`);
   if (dry) { toRun.forEach(r => log("  would run:", r.id)); return; }
 
+  const prevState = { ...state };
   for (const r of toRun) {
     log(`running ${r.id} (${r.agentId})...`);
     // mark attempt first so a crash can't cause rapid-fire re-runs
@@ -106,6 +327,14 @@ async function main() {
     await fs.mkdir(path.dirname(statePath), { recursive: true });
     await fs.writeFile(statePath, JSON.stringify(state, null, 2), "utf8");
     try {
+      if (r.kind === "memory-distill") {
+        await runDistill(r, vault, now, forceId ? null : prevState[r.id]);
+        continue;
+      }
+      if (r.kind === "source-sync") {
+        await runSourceSync(r, vault, now);
+        continue;
+      }
       let prompt = r.prompt;
       if (r.inject === "ledger") {
         try {

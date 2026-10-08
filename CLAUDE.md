@@ -61,3 +61,13 @@ Path from `OBSIDIAN_VAULT` in `.env.local` (iCloud-synced:
   current workflow is direct edits with the same verify discipline.
 - Agents inside AEGIS do content/strategy only — they cannot modify AEGIS's own code.
 - See `decisions.md` for why things are the way they are before changing them.
+
+## Memory distillation
+- Routine kind `memory-distill` in routines runner: nightly 03:40, reads chats modified since last run, asks claude-prime for `FACT [project-id]:` lines, appends them dated under `## Learned` in that project's brief (frontmatter untouched; exact-duplicate lines skipped). Report in vault `AEGIS/Routines/memory-distill/`.
+- `## Learned` is injected into agent context automatically via loadProjectContext (full brief body).
+- Test: `node scripts/routines-runner.mjs --force memory-distill --lookback <hours>`.
+- Known gap: runner marks state BEFORE running, so a run that fails while the server is down (e.g. Mac just woke) is skipped until the next scheduled day and files no Decision.
+
+## Source docs sync
+- Routine kind `source-sync` (weekly Mon 07:30): per-project folder map lives in the routine's `sources` in vault routines.json. Incremental by mtime — unchanged files cost zero tokens; ≤10 changed files per run, local extraction (textutil for docx/rtf, pdftotext for PDFs if installed, plain read for md/txt/csv; xlsx unsupported), distilled by claude-prime into dated bullets under `## Source Notes` in the project brief. State: data/source-sync-state.json. Reports: vault AEGIS/Routines/source-sync/.
+- Test: `node scripts/routines-runner.mjs --force source-sync`.
