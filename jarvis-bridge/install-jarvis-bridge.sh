@@ -74,4 +74,5 @@ patch("tools.py", [
 ])
 print("ALL PATCHES APPLIED")
 PY
+python3 -c "import json,sys; c=json.load(open('$J/config.json')); print('Jarvis vault path:', c.get('vault'))" 2>/dev/null || echo "NOTE: could not read Jarvis vault path"
 echo "Done. Restart Jarvis to load the bridge."

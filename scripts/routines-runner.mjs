@@ -325,14 +325,14 @@ async function runLeadsWatch(r, now) {
   else if (filed) log(`  leads-watch: ${filed} new lead decision(s) filed`);
 }
 
-async function runJarvisSync(r, vault, now) {
+async function runJarvisSync(r, vault, now, forced) {
   const dest = r.destination || path.join(process.env.HOME || "", "Documents", "Jarvis Brain");
   const sources = [
     ["Projects", path.join(vault, "AEGIS", "Projects")],
     ["Context", path.join(vault, "AEGIS", "Context")],
     ["Decisions", path.join(vault, "AEGIS", "Decisions")],
   ];
-  let copied = 0, kept = 0;
+  let copied = 0, kept = 0; const failed = [];
   for (const [sub, srcDir] of sources) {
     let files = [];
     try { files = await fs.readdir(srcDir); } catch { continue; }
@@ -345,11 +345,32 @@ async function runJarvisSync(r, vault, now) {
       let oStat = null;
       try { oStat = await fs.stat(out); } catch {}
       if (oStat && oStat.mtimeMs >= sStat.mtimeMs) { kept++; continue; }
-      await fs.copyFile(src, out);
-      copied++;
+      try {
+        // read+write (not copyFile): clone-copy can't hydrate iCloud-evicted files (error -11)
+        const buf = await fs.readFile(src);
+        await fs.writeFile(out, buf);
+        copied++;
+      } catch (e) {
+        failed.push(`${sub}/${f}: ${e.message}`.slice(0, 120));
+      }
     }
   }
-  log(`  jarvis-sync: ${copied} notes updated, ${kept} unchanged → ${dest}`);
+  log(`  jarvis-sync: ${copied} updated, ${kept} unchanged${failed.length ? `, ${failed.length} FAILED` : ""} → ${dest}`);
+  if (failed.length) await fileDecision("Jarvis sync: some notes failed to copy", failed.join("\n"), "jarvis-sync", r.agentId || "claude-prime");
+
+  // rebuild the 3D galaxy so the new notes appear (Jarvis's build.py; corpus reloads on its next restart)
+  if ((copied > 0 || forced) && r.rebuild !== false) {
+    const jhome = r.jarvisHome || path.join(process.env.HOME || "", ".claude", "skills", "brain-jarvis");
+    try {
+      const { execFile } = await import("child_process");
+      const { promisify } = await import("util");
+      await promisify(execFile)("python3", [path.join(jhome, "build.py"), "--vault", dest],
+        { cwd: jhome, timeout: 120000 });
+      log("  jarvis-sync: galaxy rebuilt");
+    } catch (e) {
+      log(`  jarvis-sync: galaxy rebuild failed (notes still synced): ${e.message}`);
+    }
+  }
 }
 
 async function main() {
@@ -395,7 +416,7 @@ async function main() {
         continue;
       }
       if (r.kind === "jarvis-sync") {
-        await runJarvisSync(r, vault, now);
+        await runJarvisSync(r, vault, now, !!forceId);
         continue;
       }
       let prompt = r.prompt;
