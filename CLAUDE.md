@@ -76,3 +76,6 @@ Path from `OBSIDIAN_VAULT` in `.env.local` (iCloud-synced:
 - Each business keeps leads in its own Supabase project: dubova-villas `enquiries`, jetpedia `aircraft_inquiries` (both have status + internal_notes pipeline columns). Config in lib/crm.ts; per-project SERVICE ROLE keys in .env.local (CRM_DUBOVA_KEY, CRM_JETPEDIA_KEY) — never commit or echo.
 - /api/crm GET lists normalized leads across sources, PATCH updates status/notes. LeadsView = Leads nav entry.
 - Runner kind `leads-watch` runs every launchd pass: diffs lead ids vs data/leads-state.json, files a Decision per new lead (first run records baseline silently).
+
+## Jarvis bridge
+- Routine kind `jarvis-sync` (daily 04:10, after the distiller): one-way copy of curated vault knowledge (AEGIS/Projects, Context, Decisions .md files; mtime-incremental, READMEs skipped) into the local Jarvis app's notes folder (`destination` in routines.json, default ~/Documents/Jarvis Brain). Jarvis (brain-jarvis v8.1, localhost:4719) reads that folder as its 3D-galaxy brain; it never writes to the vault. No model calls, zero tokens.

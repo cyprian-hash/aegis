@@ -325,6 +325,33 @@ async function runLeadsWatch(r, now) {
   else if (filed) log(`  leads-watch: ${filed} new lead decision(s) filed`);
 }
 
+async function runJarvisSync(r, vault, now) {
+  const dest = r.destination || path.join(process.env.HOME || "", "Documents", "Jarvis Brain");
+  const sources = [
+    ["Projects", path.join(vault, "AEGIS", "Projects")],
+    ["Context", path.join(vault, "AEGIS", "Context")],
+    ["Decisions", path.join(vault, "AEGIS", "Decisions")],
+  ];
+  let copied = 0, kept = 0;
+  for (const [sub, srcDir] of sources) {
+    let files = [];
+    try { files = await fs.readdir(srcDir); } catch { continue; }
+    const outDir = path.join(dest, sub);
+    await fs.mkdir(outDir, { recursive: true });
+    for (const f of files) {
+      if (!f.endsWith(".md") || f.toLowerCase() === "readme.md") continue;
+      const src = path.join(srcDir, f), out = path.join(outDir, f);
+      const sStat = await fs.stat(src);
+      let oStat = null;
+      try { oStat = await fs.stat(out); } catch {}
+      if (oStat && oStat.mtimeMs >= sStat.mtimeMs) { kept++; continue; }
+      await fs.copyFile(src, out);
+      copied++;
+    }
+  }
+  log(`  jarvis-sync: ${copied} notes updated, ${kept} unchanged → ${dest}`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const dry = args.includes("--dry");
@@ -365,6 +392,10 @@ async function main() {
       }
       if (r.kind === "leads-watch") {
         await runLeadsWatch(r, now);
+        continue;
+      }
+      if (r.kind === "jarvis-sync") {
+        await runJarvisSync(r, vault, now);
         continue;
       }
       let prompt = r.prompt;
