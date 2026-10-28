@@ -364,7 +364,7 @@ async function runJarvisSync(r, vault, now, forced) {
     try {
       const { execFile } = await import("child_process");
       const { promisify } = await import("util");
-      await promisify(execFile)("python3", [path.join(jhome, "build.py"), "--vault", dest],
+      await promisify(execFile)("python3", [path.join(jhome, "build.py"), "--vault", dest, "--out", path.join(jhome, "viewer")],
         { cwd: jhome, timeout: 120000 });
       log("  jarvis-sync: galaxy rebuilt");
     } catch (e) {
